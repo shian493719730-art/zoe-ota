@@ -265,6 +265,16 @@ class LLM:
         if r.status_code == 400 and "temperature" in r.text and "temperature" in body:
             body.pop("temperature")
             r = self._post(url, headers, body)
+        if r.status_code in (400, 404) and ("model" in r.text.lower() or "not_found" in r.text.lower()):
+            for fallback_m in ["claude-opus-4-1-20250805", "claude-sonnet-4-20250514", "claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022"]:
+                if body.get("model") == fallback_m:
+                    continue
+                body["model"] = fallback_m
+                r_fb = self._post(url, headers, body)
+                if r_fb.status_code == 200:
+                    r = r_fb
+                    self.model = fallback_m
+                    break
         if r.status_code != 200:
             raise LLMError(f"Anthropic 接口错误 {r.status_code}: {r.text[:300]}")
         d = r.json()

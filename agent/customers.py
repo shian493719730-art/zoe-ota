@@ -82,13 +82,21 @@ def scan_competitors(event_dir: Path, cfg: dict, llm: LLM, searcher: Searcher, f
             comps.append(d)
             notes.append(f"🔍 动态自动发现中国展区参展机器人展商：{d['name']}")
     evidence = []
+    consec_fail = 0
     for c in comps:
+        if consec_fail >= 2:
+            evidence.append({"competitor": c["name"], "origin": c.get("origin"), "aliases": c["aliases"], "hits": []})
+            continue
         q = "(" + " OR ".join(f'"{a}"' for a in c["aliases"]) + f') "{kw}"'
         try:
             hits = searcher.search(q, None, False, since)[:4]
+            consec_fail = 0
         except SearchError as e:
             notes.append(f"{c['name']} 检索失败：{e}")
             hits = []
+            consec_fail += 1
+            if consec_fail >= 2:
+                notes.append("外网检索当前网络受限（连续失败已自动熔断跳过剩余查询）")
         evidence.append({"competitor": c["name"], "origin": c.get("origin"), "aliases": c["aliases"],
                          "hits": [{"title": h.title, "url": h.url, "snippet": h.snippet[:300]} for h in hits]})
     for i in range(0, len(evidence), 6):

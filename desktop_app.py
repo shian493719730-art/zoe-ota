@@ -764,15 +764,20 @@ class AgentDispatcher:
                     leads_file = Path(f["path"])
                     break
 
+        leads_kw_in_msg = any(k in lower_msg for k in ("线索", "买家", "画像", "分层", "脱敏", "名片", "客户名单", "leads"))
+        file_looks_like_leads = any(
+            k in (files_text_block[:800] + " " + " ".join(p.get("filename", "") for p in parsed_files)).lower()
+            for k in ("lead", "线索", "买家", "名片", "客户名单", "email", "邮箱", "phone", "电话", "职务", "职位")
+        )
         has_pasted_leads = any(k in lower_msg for k in ("公司", "职位", "职务", "国家", "巡检", "采购", "意向", "装配", "测试", "bosch", "siemens", "university", "tech")) and len(msg_clean.splitlines()) >= 2
         wants_demo = any(k in lower_msg for k in ("样板", "演示", "demo", "继续", "体验", "先跑", "试一下", "好的", "开始"))
-        
-        # 严格判断是否执行线索数据清洗（否定句或澄清句绝不误触发）
+
+        # 严格判断是否执行线索数据清洗（否定句或通用文档解析绝不误劫持为线索分层）
         is_leads_task = (not is_negation_or_clarification) and (
-            (action == "leads") or 
-            has_pasted_leads or 
-            (leads_file is not None) or 
-            (any(k in msg_clean for k in ("线索分层", "买家画像", "线索清洗", "客户脱敏")) and (wants_demo or has_pasted_leads))
+            (action == "leads")
+            or has_pasted_leads
+            or (leads_file is not None and (leads_kw_in_msg or (file_looks_like_leads and not msg_clean)))
+            or (leads_kw_in_msg and (wants_demo or has_pasted_leads))
         )
 
         if is_leads_task:

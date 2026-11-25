@@ -151,7 +151,11 @@ class Searcher:
         is_cn = any('一' <= ch <= '鿿' for ch in query) or any(str(d).endswith('.cn') for d in (domains or []))
         reg = "cn-zh" if is_cn else "wt-wt"
         try:
-            with DDGS() as d:
+            try:
+                d_ctx = DDGS(timeout=6)
+            except TypeError:
+                d_ctx = DDGS()
+            with d_ctx as d:
                 if news:
                     rows = list(d.news(q, max_results=self.n, timelimit=tl, region=reg)) if tl else list(d.news(q, max_results=self.n, region=reg))
                     return [Hit(r.get("title", ""), r.get("url", ""), r.get("body", ""), r.get("date", "")) for r in rows]

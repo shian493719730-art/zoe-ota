@@ -190,12 +190,18 @@ def run_monitor(event_dir: Path, cfg: dict, llm: LLM, searcher: Searcher, fetche
     plan = plan_queries(ev, cfg, max_queries)
     log(f"检索计划：{len(plan)} 条查询")
     pool: dict[str, dict] = {}
+    consec_fail = 0
     for item in plan:
         try:
             hits = searcher.search(item["q"], item["domains"], item["kind"] == "news", since_days)
+            consec_fail = 0
         except SearchError as e:
             notes.append(f"搜索失败「{item['q'][:40]}」：{e}")
             log(f"  ⚠ {e}")
+            consec_fail += 1
+            if consec_fail >= 2:
+                notes.append("外网检索当前网络受限（连续失败已自动熔断跳过），仅保留已配置/已有信息")
+                break
             continue
         item["found"] = len(hits)
         for h in hits:

@@ -1,6 +1,6 @@
 {
-  "version": "1.2.2",
-  "build": 122,
+  "version": "1.2.3",
+  "build": 123,
   "updated_at": "2026-11-25",
-  "notes": "修复AppTranslocation只读报错、附件解析导入缺失与长周报JSON容错"
+  "notes": "优化通用文档上传分流、外网检索熔断防卡死与Anthropic模型容错"
 }
