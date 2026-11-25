@@ -1,0 +1,2387 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+  <meta charset="UTF-8">
+  <title>Zoe · 商业智能与活动决策平台</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS (本地离线版，秒开无外网依赖) -->
+  <script src="/vendor/tailwindcss.js"></script>
+  <!-- Marked Markdown Parser (本地离线版) -->
+  <script src="/vendor/marked.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"SF Pro Display"', '"PingFang SC"', '"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'Menlo', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#09090B',
+              900: '#121215',
+              800: '#1E1E24',
+              700: '#2A2A32',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* ==================== Nextly-Inspired Frosted Glass & Monochrome System ==================== */
+    :root {
+      --bg-studio: #F4F5F7;
+      --card-bg: rgba(255, 255, 255, 0.78);
+      --card-border: rgba(0, 0, 0, 0.07);
+      --card-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+      --pill-primary: #09090B;
+      --pill-text: #FFFFFF;
+      --text-main: #09090B;
+      --text-sub: #71717A;
+      --text-muted: #A1A1AA;
+      --glass-blur: blur(28px) saturate(190%);
+    }
+
+    .dark {
+      --bg-studio: #090A0D;
+      --card-bg: rgba(20, 21, 26, 0.78);
+      --card-border: rgba(255, 255, 255, 0.09);
+      --card-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.40);
+      --pill-primary: #FAFAFA;
+      --pill-text: #09090B;
+      --text-main: #FAFAFA;
+      --text-sub: #A1A1AA;
+      --text-muted: #71717A;
+      --glass-blur: blur(32px) saturate(200%);
+    }
+
+    body {
+      background-color: var(--bg-studio);
+      color: var(--text-main);
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Ambient atmospheric diffusion behind frosted glass */
+    .ambient-glow {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 9999px;
+      filter: blur(120px);
+      pointer-events: none;
+      opacity: 0.35;
+      z-index: 0;
+    }
+
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--card-shadow);
+    }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.14); border-radius: 9999px; }
+    .dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+
+    /* Markdown 办公排版规范 */
+    .markdown-body { font-size: 0.92rem; line-height: 1.7; color: #18181B; }
+    .dark .markdown-body { color: #F4F4F5; }
+    .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+      font-weight: 700; color: #09090B; margin-top: 1.25rem; margin-bottom: 0.5rem; letter-spacing: -0.015em;
+    }
+    .dark .markdown-body h1, .dark .markdown-body h2, .dark .markdown-body h3 { color: #FFFFFF; }
+    .markdown-body h1 { font-size: 1.35rem; }
+    .markdown-body h2 { font-size: 1.15rem; border-bottom: 1px solid rgba(0, 0, 0, 0.08); padding-bottom: 0.35rem; }
+    .dark .markdown-body h2 { border-color: rgba(255, 255, 255, 0.1); }
+    .markdown-body h3 { font-size: 1.02rem; }
+    .markdown-body p { margin-bottom: 0.75rem; }
+    .markdown-body ul, .markdown-body ol { margin-left: 1.4rem; margin-bottom: 0.75rem; list-style-type: disc; }
+    .markdown-body table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 1rem 0; font-size: 0.85rem; border-radius: 0.875rem; overflow: hidden; border: 1px solid rgba(0, 0, 0, 0.08); }
+    .dark .markdown-body table { border-color: rgba(255, 255, 255, 0.1); }
+    .markdown-body th, .markdown-body td { padding: 0.6rem 0.8rem; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+    .dark .markdown-body th, .dark .markdown-body td { border-color: rgba(255, 255, 255, 0.08); }
+    .markdown-body th { background: rgba(0, 0, 0, 0.03); font-weight: 600; color: #52525B; text-align: left; }
+    .dark .markdown-body th { background: rgba(255, 255, 255, 0.04); color: #A1A1AA; }
+    .markdown-body tr:last-child td { border-bottom: none; }
+    .markdown-body code { background: rgba(0, 0, 0, 0.05); padding: 0.15rem 0.4rem; border-radius: 0.375rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #09090B; }
+    .dark .markdown-body code { background: rgba(255, 255, 255, 0.08); color: #F4F4F5; }
+    .markdown-body pre { background: #121316; color: #F4F4F5; padding: 0.95rem; border-radius: 0.875rem; overflow-x: auto; margin: 0.75rem 0; }
+    .markdown-body pre code { background: transparent; padding: 0; color: inherit; }
+  </style>
+</head>
+<body class="font-sans antialiased h-screen flex overflow-hidden select-none transition-colors duration-200 relative">
+
+  <!-- 背景柔和漫反射环境光球 (Nextly 灵动质感，高斯模糊 120px) -->
+  <div class="ambient-glow bg-slate-300/40 dark:bg-zinc-800/20 top-[-100px] left-[15%]"></div>
+  <div class="ambient-glow bg-amber-200/25 dark:bg-amber-900/10 bottom-[-150px] right-[10%]"></div>
+
+  <!-- ==================== 1. 左侧轻量导航与会话目录 (260px) ==================== -->
+  <aside class="w-[260px] bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl border-r border-zinc-200/80 dark:border-zinc-800 flex flex-col justify-between shrink-0 h-full z-20">
+    
+    <!-- 边栏顶部：品牌与工作区选择器 -->
+    <div class="p-3.5 border-b border-zinc-200/70 dark:border-zinc-800/70 space-y-3">
+      <!-- 品牌标识 (Zoe 专属) -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-extrabold text-sm shadow-sm">
+            Z
+          </div>
+          <div>
+            <div class="font-bold text-xs tracking-tight text-zinc-900 dark:text-white">Zoe · 商业智能</div>
+            <div class="text-[10px] text-zinc-500 dark:text-zinc-400">欧洲市场决策平台</div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-1">
+          <button id="ota-update-pill" onclick="applyOtaUpdate()" class="hidden text-[9px] px-2 py-0.5 rounded-full bg-amber-400 text-zinc-950 font-extrabold shadow-xs hover:bg-amber-300 transition animate-pulse cursor-pointer" title="点击立即在线热更新到最新版本">
+            ⚡ 发现新版
+          </button>
+          <span id="app-version-badge" onclick="openSettingsModal()" class="text-[9px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-mono font-semibold border border-zinc-200 dark:border-zinc-700 cursor-pointer hover:border-zinc-400 transition" title="点击查看版本与检查更新">v1.2.1</span>
+        </div>
+      </div>
+
+      <!-- 工作区选择卡片 (少而精，卡片式布局) -->
+      <div class="p-2.5 rounded-2xl bg-white/80 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 shadow-2xs space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">目标活动工作区</span>
+          <button onclick="openImportEventModal()" class="text-[10px] text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white font-semibold flex items-center space-x-0.5 transition" title="导入新展会资料并开辟专属工作区">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span>导入活动</span>
+          </button>
+        </div>
+
+        <!-- 工作区下拉切换器 -->
+        <div class="relative">
+          <select id="sidebar-workspace-select" onchange="onSwitchWorkspace(this.value)" class="w-full text-xs font-bold py-1.5 px-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none cursor-pointer pr-6 appearance-none truncate">
+            <!-- 动态注入展会列表 -->
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-zinc-500">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </div>
+        </div>
+
+        <!-- Mac 原生双 Tab 分段导航：[工作区看板] 与 [会话工作流] -->
+        <div class="p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200/70 dark:border-zinc-800 grid grid-cols-2 gap-1 text-center font-medium text-xs">
+          <button id="nav-btn-home" onclick="switchToHomeView()" class="py-1.5 px-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1" title="切换至该展会的多任务交付看板与行动建议">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            <span>看板总览</span>
+          </button>
+          <button id="nav-btn-chat" onclick="switchToChatView()" class="py-1.5 px-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1" title="切换至与 Zoe AI 助手的实时推演对话">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            <span>会话对话</span>
+          </button>
+        </div>
+
+        <!-- 新建会话按键 -->
+        <button onclick="newSession()" class="w-full py-1.5 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center justify-center space-x-1.5 shadow-xs hover:bg-zinc-800 dark:hover:bg-zinc-100 transition active:scale-95" title="在当前工作区开辟一轮全新的独立会话">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+          <span>新建任务会话</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 边栏中部：当前工作区下的任务会话列表 -->
+    <div class="flex-1 overflow-y-auto p-3 space-y-2">
+      <div>
+        <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 px-1 mb-1.5 uppercase tracking-wider flex items-center justify-between">
+          <span id="session-list-heading">当前工作区会话</span>
+          <span id="session-count" class="font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 px-1.5 py-0.2 rounded-full text-[9px] font-bold">0</span>
+        </div>
+        <div id="session-list" class="space-y-1">
+          <!-- 动态注入会话 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 边栏底部：交付成果速览与资产库 (充分利用留白，仅显示提炼标题，过滤JSON) -->
+    <div class="p-3 border-t border-zinc-200/70 dark:border-zinc-800/70 space-y-2 bg-white/50 dark:bg-zinc-900/50 shrink-0">
+      <div class="flex items-center justify-between px-1">
+        <span class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider flex items-center space-x-1">
+          <svg class="w-3 h-3 text-zinc-600 dark:text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <span>交付成果速览</span>
+        </span>
+        <button onclick="openVaultModal()" class="text-[10px] text-zinc-900 dark:text-white font-bold hover:underline flex items-center space-x-0.5" title="展开完整工作区文件表与资产库">
+          <span>完整资产库 ></span>
+        </button>
+      </div>
+
+      <!-- 最近交付成果列表 (只展示总结过的高级标题，绝无原始文件名或 JSON) -->
+      <div id="sidebar-deliverables-list" class="space-y-1.5 max-h-44 overflow-y-auto pr-0.5">
+        <!-- JS 动态注入 Top 3 交付物 -->
+      </div>
+
+      <!-- 收成一个精简入口的完整资产库按钮 -->
+      <button onclick="openVaultModal()" class="w-full py-1.5 px-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-semibold flex items-center justify-between transition group text-left shadow-2xs" title="点击查看本工作区已生成的全部 PPT、Excel、Markdown 与原始输入附件">
+        <div class="flex items-center space-x-2">
+          <div class="w-5 h-5 rounded-lg bg-white dark:bg-zinc-700 flex items-center justify-center text-zinc-700 dark:text-zinc-200">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+          </div>
+          <span class="text-[11px] font-bold">工作区完整资产库</span>
+        </div>
+        <span id="sidebar-vault-badge" class="text-[10px] text-zinc-400 font-mono">加载中...</span>
+      </button>
+
+      <!-- 底端状态：大模型状态、新手教程与主题切换 -->
+      <div class="flex items-center justify-between px-1 pt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+        <div class="flex items-center space-x-1.5 cursor-pointer hover:opacity-80 transition" onclick="openSettingsModal()" title="点击配置 API Key 与模型">
+          <span id="model-status-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span id="model-status-text" class="font-medium text-zinc-700 dark:text-zinc-300">Claude Opus 5.5</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <button onclick="openTutorialModal()" class="px-2 py-0.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-bold text-[10px] flex items-center space-x-1 transition" title="打开 1 分钟新手快速入门指南">
+            <span>📖 教程</span>
+          </button>
+          <button onclick="toggleTheme()" class="p-1 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition" title="切换浅色/深色模式">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+          </button>
+          <button onclick="openSettingsModal()" class="p-1 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition" title="配置与连接设置">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== 2. 主区域 (工作区看板 vs 会话工作流) ==================== -->
+  <main class="flex-1 flex flex-col h-full overflow-hidden relative transition-colors duration-200 z-10">
+    
+    <!-- ------------------ 视图 A: 工作区总览看板 (Workspace Home View) ------------------ -->
+    <div id="view-workspace-home" class="flex-1 flex flex-col h-full overflow-hidden hidden">
+      
+      <!-- 主页顶栏 -->
+      <header class="h-14 border-b border-zinc-200/80 dark:border-zinc-800 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-2xl flex items-center justify-between px-6 z-10 shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <h2 id="home-event-title" class="font-extrabold text-sm text-zinc-900 dark:text-white tracking-tight">出海展会工作区</h2>
+          </div>
+          <!-- 醒目高光状态标 (亮黄色高饱和强化视觉焦点) -->
+          <span id="home-status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-400 text-black shadow-xs">
+            6/6 闭环 · 100%
+          </span>
+        </div>
+
+        <div class="flex items-center space-x-2.5">
+          <!-- 新手教程按钮 (醒目清晰) -->
+          <button onclick="openTutorialModal()" class="px-3.5 py-2 rounded-full bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95 shadow-sm" title="查看 1 分钟新手操作教程">
+            <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            <span>新手教程</span>
+          </button>
+
+          <!-- 打包全部交付物按钮 (带清晰说明与高响应) -->
+          <button onclick="downloadAllOutputs()" class="px-3.5 py-2 rounded-full bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95 shadow-sm" title="一键将本展会所有 PPT、Excel、Markdown 复盘成果打包为 ZIP 并自动在访达中高亮定位">
+            <svg class="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>打包交付物 (ZIP)</span>
+          </button>
+
+          <!-- 超醒目的主按钮：返回会话工作流 -->
+          <button onclick="switchToChatView()" class="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-extrabold text-xs flex items-center space-x-2 shadow-md hover:bg-zinc-800 dark:hover:bg-zinc-100 transition active:scale-95" title="切换回沉浸式对话工作流，继续推演或提问">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            <span>进入会话工作流 →</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 主页滚动内容区 (极简卡片布局，大面积留白，突出核心数据) -->
+      <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        <div class="max-w-4xl mx-auto space-y-5">
+          
+          <!-- 超直观的「返回会话推演」快捷横幅 -->
+          <div onclick="switchToChatView()" class="p-4 rounded-3xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-md hover:bg-zinc-800 dark:hover:bg-zinc-100 transition cursor-pointer flex items-center justify-between group">
+            <div class="flex items-center space-x-3.5">
+              <div class="w-10 h-10 rounded-2xl bg-white/10 dark:bg-zinc-900/10 flex items-center justify-center font-bold">
+                <svg class="w-5 h-5 text-amber-400 dark:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+              </div>
+              <div>
+                <div class="font-extrabold text-sm flex items-center space-x-2">
+                  <span>发起新对话 / 返回会话工作流</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-black font-black">核心入口</span>
+                </div>
+                <div class="text-xs text-zinc-400 dark:text-zinc-600 font-normal mt-0.5">随时向 Zoe 决策助手提出需求、粘贴手记备忘，或继续推演业务策略</div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1 text-xs font-bold group-hover:translate-x-1 transition">
+              <span>立即进入会话</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+            </div>
+          </div>
+
+          <!-- 工作区数据概览横幅 (大号粗体数据显示，次要信息细化) -->
+          <div class="p-6 rounded-3xl glass-card space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">欧洲出海业务协同枢纽</span>
+              <span id="home-event-venue" class="text-xs font-mono text-zinc-500 dark:text-zinc-400">场馆已就绪</span>
+            </div>
+            <h1 id="home-headline" class="text-2xl font-black text-zinc-950 dark:text-white tracking-tight leading-snug">商业决策与多任务闭环总览</h1>
+            <p id="home-subheadline" class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-2xl font-normal">
+              支持在同一展会工作区内并行管理商业复盘、媒体监测、买家分层、同行排查等任务。点击任务卡片可直接在系统原生 Office 中打开。
+            </p>
+          </div>
+
+          <!-- Section 1: 6 大核心业务交付看板 (少而精卡片布局) -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between px-1">
+              <h3 class="font-extrabold text-sm text-zinc-900 dark:text-white flex items-center space-x-2">
+                <svg class="w-4 h-4 text-zinc-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                <span>工作区多任务交付成果</span>
+              </h3>
+              <span class="text-xs text-zinc-400">点击可在系统原生软件直接打开</span>
+            </div>
+
+            <!-- 6 大任务网格 -->
+            <div id="home-tasks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <!-- JS 动态注入 -->
+            </div>
+          </div>
+
+          <!-- Section 2: 基于情报推荐的高价值行动 -->
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center justify-between px-1">
+              <h3 class="font-extrabold text-sm text-zinc-900 dark:text-white flex items-center space-x-2">
+                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>智能决策建议 · Zoe 可推进的高价值行动</span>
+              </h3>
+              <span class="text-xs text-zinc-400">点击一键开启对话执行</span>
+            </div>
+
+            <!-- 推荐行动网格 -->
+            <div id="home-recommendations-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- JS 动态注入 -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------ 视图 B: 对话工作流视图 (Chat Session View) ------------------ -->
+    <div id="view-chat-session" class="flex-1 flex flex-col h-full overflow-hidden">
+      
+      <!-- 对话顶栏 (黑白灰毛玻璃，高对比度，降噪) -->
+      <header class="h-14 border-b border-zinc-200/80 dark:border-zinc-800 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-2xl flex items-center justify-between px-6 z-10 shrink-0">
+        
+        <!-- 顶栏左侧：返回看板总览 + 活动标签 + 会话标题 -->
+        <div class="flex items-center space-x-2.5 min-w-0">
+          <button onclick="switchToHomeView()" class="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold flex items-center space-x-1.5 transition" title="返回该展会工作区总览看板">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            <span>工作区看板</span>
+          </button>
+          
+          <div class="h-4 w-px bg-zinc-200 dark:bg-zinc-800"></div>
+
+          <span id="active-session-event-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700 shrink-0 font-mono">
+            Web Summit Lisbon 2026
+          </span>
+
+          <h2 id="active-session-title" class="font-bold text-sm text-zinc-900 dark:text-white truncate max-w-[260px]">新会话</h2>
+        </div>
+
+        <!-- 顶栏右侧：资产库入口、新手教程、一键打包交付物 -->
+        <div class="flex items-center space-x-2 shrink-0">
+          <!-- 资产库完整入口 (收缩为一个精炼选项) -->
+          <button onclick="openVaultModal()" class="px-3 py-1.5 rounded-full bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700 text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95 shadow-2xs" title="查看当前工作区资产库与交付文档">
+            <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+            <span>资产库</span>
+          </button>
+
+          <!-- 新手教程按钮 (醒目清晰) -->
+          <button onclick="openTutorialModal()" class="px-3 py-1.5 rounded-full bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95 shadow-2xs" title="查看 1 分钟新手快速入门指南">
+            <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            <span>新手教程</span>
+          </button>
+
+          <!-- 一键打包全部成果 (ZIP) -->
+          <button onclick="downloadAllOutputs()" class="px-3.5 py-1.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold flex items-center space-x-1.5 transition active:scale-95 shadow-xs" title="一键将本展会所有 PPT、分析报告、客户分层表与周报打包为 ZIP 并在访达中高亮定位">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>打包交付物 (ZIP)</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 消息对话滚动区 (大面积留白，沉浸式高质感) -->
+      <div id="messages-container" class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        
+        <!-- 空会话欢迎区 (极简卡片，拒绝视觉噪音) -->
+        <div id="welcome-hero" class="max-w-2xl mx-auto py-10 text-center space-y-6">
+          <div class="space-y-2">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700 mb-1">
+              <span>Zoe · 欧洲出海决策工作台</span>
+            </div>
+            <h1 class="text-2xl font-black text-zinc-950 dark:text-white tracking-tight">下午好，Zoe。当前处于【<span id="welcome-event-name">出海展会</span>】工作区。</h1>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+              请在下方对话框直接输入随手记、粘贴现场笔记，或拖入材料表格启动分析。
+            </p>
+            <div class="pt-1">
+              <button onclick="openTutorialModal()" class="inline-flex items-center space-x-1.5 text-xs text-zinc-500 hover:text-zinc-950 dark:hover:text-white transition font-semibold group px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 shadow-2xs">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <span>首次使用？点击查看 1 分钟新手操作教程</span>
+                <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 大核心任务快捷启动卡片 (Nextly 浮动卡片质感) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left max-w-xl mx-auto">
+            <button onclick="triggerQuickAction('report')" class="p-4 rounded-3xl glass-card hover:border-zinc-400 dark:hover:border-zinc-600 transition group space-y-2 text-left">
+              <div class="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold text-xs shadow-2xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+              </div>
+              <div>
+                <div class="font-extrabold text-xs text-zinc-900 dark:text-white group-hover:text-black transition">16:9 展会商业复盘 PPT</div>
+                <div class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed mt-0.5">四段式高管复盘报告与本地直接打开演示幻灯片。</div>
+              </div>
+            </button>
+
+            <button onclick="triggerQuickAction('monitor')" class="p-4 rounded-3xl glass-card hover:border-zinc-400 dark:hover:border-zinc-600 transition group space-y-2 text-left">
+              <div class="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold text-xs shadow-2xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 6a4 4 0 100 8 4 4 0 000-8z"></path></svg>
+              </div>
+              <div>
+                <div class="font-extrabold text-xs text-zinc-900 dark:text-white group-hover:text-black transition">全网媒体声量外媒监测</div>
+                <div class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed mt-0.5">检索 Forbes、路透社权威报道与未检出排查。</div>
+              </div>
+            </button>
+
+            <button onclick="triggerQuickAction('leads')" class="p-4 rounded-3xl glass-card hover:border-zinc-400 dark:hover:border-zinc-600 transition group space-y-2 text-left">
+              <div class="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold text-xs shadow-2xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+              </div>
+              <div>
+                <div class="font-extrabold text-xs text-zinc-900 dark:text-white group-hover:text-black transition">买家画像分层与高意向</div>
+                <div class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed mt-0.5">本地脱敏防泄密，锁定 Bosch 等欧洲高意向客户。</div>
+              </div>
+            </button>
+
+            <button onclick="triggerQuickAction('weekly')" class="p-4 rounded-3xl glass-card hover:border-zinc-400 dark:hover:border-zinc-600 transition group space-y-2 text-left">
+              <div class="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold text-xs shadow-2xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+              </div>
+              <div>
+                <div class="font-extrabold text-xs text-zinc-900 dark:text-white group-hover:text-black transition">事项闭环推进周报</div>
+                <div class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed mt-0.5">贴入手记，按 5 要素责任人闭环法梳理本周完成与下周推进。</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 对话气泡流 (居中 max-w-3xl) -->
+        <div id="chat-thread" class="max-w-3xl mx-auto space-y-6"></div>
+      </div>
+
+      <!-- 底部输入对话框 (极简浮动卡片，大面积聚焦) -->
+      <footer class="p-4 bg-transparent z-20">
+        <div class="max-w-3xl mx-auto space-y-2">
+          
+          <!-- 快捷功能横向胶囊 (极简黑白灰，鼠标悬浮显示详细说明) -->
+          <div class="flex items-center justify-between text-xs px-1">
+            <div class="flex items-center space-x-1.5 overflow-x-auto">
+              <span class="text-[10px] text-zinc-400 font-bold shrink-0">快捷:</span>
+              <button id="btn-quick-weekly" data-action="weekly" onclick="setPromptPrefix('weekly')" class="quick-action-btn px-2.5 py-1 rounded-full bg-white/90 dark:bg-zinc-800/90 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition whitespace-nowrap text-[11px] font-medium" title="事项闭环周报整理：填入周报模板，再次点击撤销">
+                周报
+              </button>
+              <button id="btn-quick-monitor" data-action="monitor" onclick="setPromptPrefix('monitor')" class="quick-action-btn px-2.5 py-1 rounded-full bg-white/90 dark:bg-zinc-800/90 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition whitespace-nowrap text-[11px] font-medium" title="全网媒体监测：检索 Forbes、路透社等权威报道">
+                全网监测
+              </button>
+              <button id="btn-quick-report" data-action="report" onclick="setPromptPrefix('report')" class="quick-action-btn px-2.5 py-1 rounded-full bg-white/90 dark:bg-zinc-800/90 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition whitespace-nowrap text-[11px] font-medium" title="商业复盘与 PPT：生成 16:9 商务演示幻灯片并在本地打开">
+                商业复盘
+              </button>
+              <button id="btn-quick-compare" data-action="compare" onclick="setPromptPrefix('compare')" class="quick-action-btn px-2.5 py-1 rounded-full bg-white/90 dark:bg-zinc-800/90 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition whitespace-nowrap text-[11px] font-medium" title="跨展会对比：对数归一化公平对比投资回报">
+                展会对比
+              </button>
+              <button id="btn-quick-competitors" data-action="competitors" onclick="setPromptPrefix('competitors')" class="quick-action-btn px-2.5 py-1 rounded-full bg-white/90 dark:bg-zinc-800/90 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition whitespace-nowrap text-[11px] font-medium" title="机器人同行排查：排查宇树、逐际、星动纪元参展机型与证据">
+                同行排查
+              </button>
+              <button id="btn-quick-leads" data-action="leads" onclick="setPromptPrefix('leads')" class="quick-action-btn px-2.5 py-1 rounded-full bg-white/90 dark:bg-zinc-800/90 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition whitespace-nowrap text-[11px] font-medium" title="买家线索分层：本地隐私脱敏，划分 10 类画像与高意向跟进策略">
+                买家分层
+              </button>
+            </div>
+
+            <div class="flex items-center space-x-2 text-[10px] text-zinc-400 shrink-0 font-mono">
+              <span class="flex items-center space-x-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>联网检索已开启</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- 输入文本框主体 (浮动毛玻璃卡片，高对比度圆角设计) -->
+          <div class="relative bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl rounded-3xl border border-zinc-200/90 dark:border-zinc-800 shadow-[0_8px_32px_rgba(0,0,0,0.06)] focus-within:border-zinc-900 dark:focus-within:border-white transition duration-200 p-1">
+            <!-- 附件暂存胶囊条 -->
+            <div id="staged-files-container" class="hidden px-3.5 pt-2 flex flex-wrap gap-1.5"></div>
+
+            <textarea 
+              id="user-input" 
+              rows="2" 
+              placeholder="输入工作备忘、活动需求，或直接把 PDF、Word、PPT、Excel 拖拽到这里... (Enter 发送, Shift+Enter 换行, Esc 撤销模式)"
+              onkeydown="handleInputKey(event)"
+              oninput="handleInputResize(this)"
+              class="w-full px-4 pt-3 pb-11 bg-transparent text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none resize-none leading-relaxed"
+            ></textarea>
+
+            <!-- 输入框底部工具栏 -->
+            <div class="absolute bottom-2.5 inset-x-3.5 flex items-center justify-between pointer-events-none">
+              <div class="flex items-center space-x-2 pointer-events-auto">
+                <button onclick="triggerFileUpload()" class="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[11px] font-semibold flex items-center space-x-1.5 transition shadow-2xs" title="添加 PDF、Word、PPT、Excel 或照片笔记">
+                  <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                  <span>添加材料</span>
+                </button>
+                <input type="file" id="file-uploader" class="hidden" multiple onchange="onFilesSelected(event)">
+
+                <!-- 动作锁定指示器 -->
+                <div id="action-lock-badge" class="hidden items-center space-x-1 px-2.5 py-0.5 rounded-full bg-zinc-900 text-white text-[10px] font-bold">
+                  <span>已锁定:</span>
+                  <span id="action-lock-name">商业复盘</span>
+                  <button onclick="clearCurrentAction()" class="hover:text-red-400 ml-0.5" title="撤销模式锁定">✕</button>
+                </div>
+              </div>
+
+              <!-- 右侧发送按钮 (高对比度纯黑纯白胶囊，极简有力) -->
+              <div class="flex items-center space-x-2 pointer-events-auto">
+                <span class="text-[10px] text-zinc-400 hidden sm:inline font-mono">Enter 发送</span>
+                <button onclick="sendMessage()" class="px-4 py-1.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold shadow-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition active:scale-95 flex items-center space-x-1.5">
+                  <span>发送指令</span>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </footer>
+    </div>
+  </main>
+
+  <!-- ==================== 3. 右侧上下文抽屉 ==================== -->
+  <div id="drawer-backdrop" onclick="closeContextDrawer()" class="fixed inset-0 z-40 bg-black/25 backdrop-blur-xs hidden transition-opacity"></div>
+  <div id="context-drawer" class="fixed inset-y-0 right-0 z-50 w-96 max-w-full transform translate-x-full transition-transform duration-300 ease-in-out bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl border-l border-zinc-200 dark:border-zinc-800 flex flex-col">
+    
+    <!-- 抽屉头部 -->
+    <div class="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+      <div>
+        <div class="font-extrabold text-sm text-zinc-900 dark:text-white flex items-center space-x-2">
+          <svg class="w-4 h-4 text-zinc-700 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          <span id="drawer-event-title">工作区全景看板</span>
+        </div>
+        <div id="drawer-event-subtitle" class="text-[11px] text-zinc-500 mt-0.5">任务进展与行动建议</div>
+      </div>
+      <button onclick="closeContextDrawer()" class="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-black dark:hover:text-white transition" title="关闭 (Esc)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+
+    <!-- 抽屉 Tab 导航 -->
+    <div class="flex border-b border-zinc-200 dark:border-zinc-800 px-4 text-xs font-semibold">
+      <button id="drawer-tab-tasks-btn" onclick="setDrawerTab('tasks')" class="flex-1 py-3 text-center border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white transition">
+        交付成果 (<span id="drawer-tasks-tab-count">6</span>)
+      </button>
+      <button id="drawer-tab-recs-btn" onclick="setDrawerTab('recs')" class="flex-1 py-3 text-center border-b-2 border-transparent text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition">
+        行动建议 (<span id="drawer-recs-tab-count">5</span>)
+      </button>
+    </div>
+
+    <!-- 抽屉滚动内容区 -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-3">
+      <!-- Pane 1: 任务交付成果 -->
+      <div id="drawer-pane-tasks" class="space-y-2.5">
+        <div id="hub-tasks-grid" class="space-y-2"></div>
+        <div class="pt-2">
+          <button onclick="downloadAllOutputs()" class="w-full py-2.5 px-3 rounded-2xl bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-xs flex items-center justify-center space-x-2 shadow-sm transition active:scale-95" title="一键将本展会所有 PPT、分析报告、客户分层表与周报打包为 ZIP 并在访达中定位">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>打包全部交付物 (ZIP)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pane 2: 行动建议 -->
+      <div id="drawer-pane-recs" class="hidden space-y-2.5">
+        <div class="text-[11px] text-zinc-500 pb-1">
+          基于当前已完成复盘与媒体情报，Claude Opus 5.5 推荐推进的高价值行动：
+        </div>
+        <div id="hub-recommendations-list" class="space-y-2.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 4. 工作区资产库完整弹窗 (Vault Modal) ==================== -->
+  <div id="vault-modal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl rounded-3xl max-w-3xl w-full p-6 border border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col max-h-[85vh]">
+      
+      <!-- 弹窗顶栏 -->
+      <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3 shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+          </div>
+          <div>
+            <div class="font-extrabold text-sm text-zinc-900 dark:text-white flex items-center space-x-1.5">
+              <span>工作区资产库 · <span id="vault-modal-event-name">出海展会</span></span>
+            </div>
+            <div class="text-[11px] text-zinc-500">已归档 PPT 演示文稿、深度分析报告与原始输入材料（过滤中间垃圾代码）</div>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <button onclick="openOutputsFolder()" class="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-200 text-xs font-semibold flex items-center space-x-1.5 transition shadow-2xs" title="在 macOS 访达 (Finder) 中直接定位此文件夹">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+            <span>在访达中定位</span>
+          </button>
+          <button onclick="closeVaultModal()" class="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-black dark:hover:text-white transition" title="关闭 (Esc)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 输出成果 vs 输入材料 选项卡切换 -->
+      <div class="flex items-center justify-between pt-3 pb-2 shrink-0">
+        <div class="flex p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-semibold">
+          <button id="btn-vault-outputs" onclick="switchVaultTab('outputs')" class="px-3 py-1 rounded-lg bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-2xs transition">
+            交付成果 <span id="vault-outputs-count" class="opacity-70 text-[10px]">(0)</span>
+          </button>
+          <button id="btn-vault-inputs" onclick="switchVaultTab('inputs')" class="px-3 py-1 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition">
+            输入材料 <span id="vault-inputs-count" class="opacity-70 text-[10px]">(0)</span>
+          </button>
+        </div>
+
+        <button onclick="downloadAllOutputs()" class="text-xs font-bold text-zinc-900 dark:text-white hover:underline flex items-center space-x-1.5" title="一键将本展会所有成果打包为 ZIP 并在访达中定位">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          <span>一键打包全部交付物 (ZIP)</span>
+        </button>
+      </div>
+
+      <!-- 文件列表区 -->
+      <div id="vault-modal-list" class="flex-1 overflow-y-auto space-y-2 pr-1 pt-1">
+        <!-- JS 动态注入 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 5. 活动导入模态框 (Import Event Modal) ==================== -->
+  <div id="import-event-modal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl rounded-3xl max-w-lg w-full p-6 border border-zinc-200 dark:border-zinc-800 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center font-bold text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          </div>
+          <div>
+            <div class="font-extrabold text-sm text-zinc-900 dark:text-white">导入新活动并开辟专属工作区</div>
+            <div class="text-[11px] text-zinc-500">录入展会信息并批量挂载现场资料包</div>
+          </div>
+        </div>
+        <button onclick="closeImportEventModal()" class="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-black dark:hover:text-white transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-zinc-700 dark:text-zinc-300 font-bold mb-1">展会/活动全称 *</label>
+          <input type="text" id="import-event-name" placeholder="例如：CES 2027 消费电子展 或 Vivatech Paris 2027" class="w-full px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-900">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-zinc-700 dark:text-zinc-300 font-bold mb-1">开展日期</label>
+            <input type="date" id="import-event-start" class="w-full px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-900">
+          </div>
+          <div>
+            <label class="block text-zinc-700 dark:text-zinc-300 font-bold mb-1">闭幕日期</label>
+            <input type="date" id="import-event-end" class="w-full px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-900">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-zinc-700 dark:text-zinc-300 font-bold mb-1">举办城市与展位号</label>
+          <input type="text" id="import-event-venue" placeholder="例如：Las Vegas Convention Center · Central Hall #1420" class="w-full px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-900">
+        </div>
+
+        <div>
+          <label class="block text-zinc-700 dark:text-zinc-300 font-bold mb-1">批量导入现场资料包 (PDF / Word / Excel / 手记)</label>
+          <div onclick="triggerImportDocUpload()" class="border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-4 text-center cursor-pointer hover:border-zinc-900 dark:hover:border-white transition bg-zinc-50/50 dark:bg-zinc-800/30">
+            <svg class="w-6 h-6 mx-auto text-zinc-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <div class="text-[11px] font-bold text-zinc-800 dark:text-zinc-200">点击选择或拖拽文件到这里</div>
+            <div id="import-files-count" class="text-[10px] text-zinc-400 mt-0.5">支持批量导入参展指南、展位图、竞品笔记与名片表</div>
+          </div>
+          <input type="file" id="import-doc-uploader" multiple class="hidden" onchange="onImportDocsSelected(event)">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end space-x-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+        <button onclick="closeImportEventModal()" class="px-3.5 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">取消</button>
+        <button onclick="submitImportEvent()" id="btn-submit-import" class="px-4 py-1.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold shadow-xs hover:bg-zinc-800 dark:hover:bg-zinc-100 transition active:scale-95">开辟工作区</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 6. 设置模态框 (Settings Modal) ==================== -->
+  <div id="settings-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl rounded-3xl max-w-lg w-full p-6 border border-zinc-200 dark:border-zinc-800 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+        <div class="font-extrabold text-sm text-zinc-900 dark:text-white flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center shadow-xs">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          </div>
+          <div>
+            <div class="font-extrabold text-sm text-zinc-900 dark:text-white">大模型与连接设置</div>
+            <div class="text-[11px] text-zinc-500 font-normal">支持 Claude 官方、OneAPI 聚合网关及离线免 Key 模式</div>
+          </div>
+        </div>
+        <button onclick="closeSettingsModal()" class="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-black dark:hover:text-white transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div>
+          <label class="block text-zinc-700 dark:text-zinc-300 font-bold mb-1">接口接入类型 (Provider)</label>
+          <select id="cfg-provider" onchange="onProviderChanged()" class="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-medium focus:outline-none focus:border-zinc-950 dark:focus:border-white transition">
+            <option value="anthropic">Claude 官方直连 (Anthropic)</option>
+            <option value="openai_compat">OpenAI 兼容 / OneAPI / 聚合中转网关</option>
+            <option value="mock">本地离线演练模式 (无需任何 Key / 离线全量功能可用)</option>
+          </select>
+        </div>
+
+        <div id="cfg-field-base-url">
+          <label class="block text-zinc-700 dark:text-zinc-300 font-bold mb-1">API Base URL (网关代理地址)</label>
+          <input type="text" id="cfg-base-url" placeholder="官方默认留空即可，中转填 https://your-gateway.com" class="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-mono text-xs focus:outline-none focus:border-zinc-950 dark:focus:border-white transition">
+        </div>
+
+        <div id="cfg-field-api-key">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-zinc-700 dark:text-zinc-300 font-bold">API Key (密钥凭证)</label>
+            <span id="cfg-key-indicator" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">检测中...</span>
+          </div>
+          <div class="relative">
+            <input type="password" id="cfg-key" placeholder="粘贴您的 API Key (如 sk-ant-... 或 sk-...)" class="w-full pr-10 pl-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-mono text-xs focus:outline-none focus:border-zinc-950 dark:focus:border-white transition">
+            <button type="button" onclick="toggleKeyVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-xs transition" title="显示/隐藏 Key">
+              👁️
+            </button>
+          </div>
+          <p class="text-[10px] text-zinc-400 mt-1">密钥保存在本地电脑的 ~/.zoe/.env 中，完全物理隔离，不上传任何第三方云端。</p>
+        </div>
+
+        <div>
+          <label class="block text-zinc-700 dark:text-zinc-300 font-bold mb-1">模型代号 (Model)</label>
+          <input type="text" id="cfg-model" value="claude-opus-5-5" class="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-mono text-xs focus:outline-none focus:border-zinc-950 dark:focus:border-white transition">
+        </div>
+
+        <div class="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 flex items-center justify-between">
+          <div>
+            <div class="font-bold text-zinc-900 dark:text-white text-xs">在线热更新 (OTA)</div>
+            <div id="cfg-ota-status" class="text-[10px] text-zinc-500 font-mono mt-0.5">当前版本: v1.2.1 · 免重下安装包</div>
+          </div>
+          <button type="button" id="btn-check-ota" onclick="checkForUpdates(false)" class="px-3 py-1.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-[11px] font-bold hover:opacity-90 transition active:scale-95">
+            检查更新
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-zinc-200 dark:border-zinc-800">
+        <button type="button" onclick="switchToMockQuickly()" class="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white underline underline-offset-4 transition">
+          一键切为离线 Mock 模式
+        </button>
+        <div class="flex items-center space-x-2">
+          <button onclick="closeSettingsModal()" class="px-3.5 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">取消</button>
+          <button onclick="saveConfigSettings()" id="btn-save-cfg" class="px-4 py-1.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold shadow-xs hover:bg-zinc-800 dark:hover:bg-zinc-100 transition active:scale-95">保存并实时生效</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 7. 新手使用教程模态框 (Tutorial Modal) ==================== -->
+  <div id="tutorial-modal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl rounded-3xl max-w-2xl w-full p-6 border border-zinc-200 dark:border-zinc-800 shadow-2xl space-y-4">
+      
+      <!-- 弹窗顶栏 -->
+      <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-400 text-black flex items-center justify-center font-black text-sm shadow-xs">
+            📖
+          </div>
+          <div>
+            <div class="font-extrabold text-sm text-zinc-900 dark:text-white">新手快速入门指南 · Zoe 商业智能平台</div>
+            <div class="text-[11px] text-zinc-500">专为欧洲市场部主管 Zoe 打造的多任务决策与敏捷交付工作流</div>
+          </div>
+        </div>
+        <button onclick="closeTutorialModal()" class="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-black dark:hover:text-white transition" title="关闭 (Esc)">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- 核心功能卡片网格 (2x2 卡片式布局) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs leading-relaxed">
+        
+        <div class="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 space-y-1.5">
+          <div class="flex items-center space-x-2">
+            <span class="w-5 h-5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-mono font-bold text-[10px]">1</span>
+            <span class="font-bold text-zinc-900 dark:text-white text-xs">活动工作区与细分会话</span>
+          </div>
+          <p class="text-[11px] text-zinc-500 dark:text-zinc-400">
+            顶级目录为各欧洲展会（Web Summit、IFA Berlin、WRC 等）。每个展会下可开辟多轮细分任务会话（复盘汇报、买家分层、媒体监测），切换工作区仅展示该活动下的专属会话。
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 space-y-1.5">
+          <div class="flex items-center space-x-2">
+            <span class="w-5 h-5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-mono font-bold text-[10px]">2</span>
+            <span class="font-bold text-zinc-900 dark:text-white text-xs">后台推演不中断 · 随时往返看板</span>
+          </div>
+          <p class="text-[11px] text-zinc-500 dark:text-zinc-400">
+            任务推演期间，随时点击【工作区看板】返回主页查看 6 大交付成果与行动建议，后台运算持续进行不中断；点击【进入会话工作流】随时返回，进度完全保留。
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 space-y-1.5">
+          <div class="flex items-center space-x-2">
+            <span class="w-5 h-5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-mono font-bold text-[10px]">3</span>
+            <span class="font-bold text-zinc-900 dark:text-white text-xs">本地脱敏与提炼交付物资产库</span>
+          </div>
+          <p class="text-[11px] text-zinc-500 dark:text-zinc-400">
+            上传线索名单或手记时在本地完成物理脱敏（姓名/电话自动抹除，严格符合德国 DSGVO 法规）。资产库仅展示提炼后的业务标题，中间 <code class="px-1 py-0.2 rounded bg-zinc-200 dark:bg-zinc-700 text-[10px]">.json</code> 自动过滤，点击直接在系统原生 Office 中打开。
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 space-y-1.5">
+          <div class="flex items-center space-x-2">
+            <span class="w-5 h-5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-mono font-bold text-[10px]">4</span>
+            <span class="font-bold text-zinc-900 dark:text-white text-xs">一键打包全部成果并访达定位</span>
+          </div>
+          <p class="text-[11px] text-zinc-500 dark:text-zinc-400">
+            点击顶部的【打包交付物 (ZIP)】按钮，系统自动将当前展会的所有 PPT、Excel 与 Markdown 成果打包，并自动在 macOS 访达 (Finder) 中高亮定位。
+          </p>
+        </div>
+
+      </div>
+
+      <!-- 快捷键与实用交互提示 -->
+      <div class="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800/70 border border-zinc-200/60 dark:border-zinc-700/60 flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-300">
+        <div class="flex items-center space-x-3">
+          <span class="font-bold text-zinc-900 dark:text-white">⚡ 常用快捷键：</span>
+          <span class="font-mono bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 font-bold">Enter</span> 发送指令
+          <span class="font-mono bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 font-bold">Shift+Enter</span> 换行
+          <span class="font-mono bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 font-bold">Esc</span> 关闭弹窗
+        </div>
+        <div class="text-zinc-400 hidden sm:block">支持任意文件直接拖拽导入</div>
+      </div>
+
+      <!-- 底部按钮 -->
+      <div class="flex justify-between items-center pt-2 border-t border-zinc-200 dark:border-zinc-800">
+        <div class="text-[11px] text-zinc-400">
+          如需再次查看，可随时点击界面顶部的【新手教程】
+        </div>
+        <button onclick="closeTutorialModal()" class="px-5 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold shadow-md hover:bg-zinc-800 dark:hover:bg-zinc-100 transition active:scale-95">
+          开始体验 Zoe 决策智能 →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全局轻量通知吐司 (Toast) -->
+  <div id="global-toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none opacity-0 scale-95 transition-all duration-300 py-2.5 px-4 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold shadow-xl border border-zinc-800 dark:border-zinc-200 flex items-center space-x-2">
+    <span>操作成功</span>
+  </div>
+
+  <!-- 全局拖拽文件高亮蒙层 -->
+  <div id="drag-drop-overlay" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-md hidden pointer-events-none flex items-center justify-center">
+    <div class="p-8 rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl border-2 border-dashed border-zinc-900 dark:border-white text-center space-y-2">
+      <svg class="w-12 h-12 mx-auto text-zinc-900 dark:text-white animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+      <div class="font-black text-sm text-zinc-900 dark:text-white">松开鼠标，将材料直接导入本轮对话</div>
+      <div class="text-xs text-zinc-400">支持 PDF、Word、PPT、Excel 与图片笔记</div>
+    </div>
+  </div>
+
+  <!-- ==================== 8. 核心业务驱动脚本 ==================== -->
+  <script>
+    // 全局状态管理
+    let currentEvent = 'websummit2026';
+    let currentSessionId = null;
+    let currentView = 'chat'; // 'home' | 'chat'
+    let currentDrawerTab = 'tasks'; // 'tasks' | 'recs'
+    let currentVaultTab = 'outputs'; // 'outputs' | 'inputs'
+    let currentAction = null; // 当前快捷功能锁定
+    let currentVaultData = { outputs: [], inputs: [] };
+    let stagedFiles = []; // 本轮待发送附件列表
+    let stagedImportDocs = [];
+    let sessions = [];
+    let eventsCatalog = [];
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      initTheme();
+      await loadConfig();
+      await loadEventsCalendar();
+      await loadSessions();
+      await loadVault();
+      await loadWorkspaceStatus(currentEvent);
+      // 默认更新一次侧边栏高亮
+      updateViewNavigationButtons();
+      // 启动后 2 秒后台静默检查一次 OTA 热更新
+      setTimeout(() => checkForUpdates(true), 2000);
+    });
+
+    // 快捷键监听 (Esc 关闭所有浮层与模态窗)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeContextDrawer();
+        closeVaultModal();
+        closeImportEventModal();
+        closeSettingsModal();
+        closeTutorialModal();
+        clearCurrentAction();
+      }
+    });
+
+    // ---------- 主题管理 ----------
+    function toggleTheme() {
+      const html = document.documentElement;
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        localStorage.setItem('zoe_theme', 'light');
+      } else {
+        html.classList.add('dark');
+        localStorage.setItem('zoe_theme', 'dark');
+      }
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem('zoe_theme');
+      if (saved === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
+    // ---------- 全局轻量吐司与拖拽交互 ----------
+    function showToast(message) {
+      const toast = document.getElementById('global-toast');
+      if (!toast) return;
+      toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+      toast.classList.remove('opacity-0', 'scale-95');
+      toast.classList.add('opacity-100', 'scale-100');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'scale-100');
+        toast.classList.add('opacity-0', 'scale-95');
+      }, 2500);
+    }
+
+    // 窗口级文件拖拽支持
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const overlay = document.getElementById('drag-drop-overlay');
+      if (overlay) overlay.classList.remove('hidden');
+    });
+
+    window.addEventListener('dragleave', (e) => {
+      if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
+        const overlay = document.getElementById('drag-drop-overlay');
+        if (overlay) overlay.classList.add('hidden');
+      }
+    });
+
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const overlay = document.getElementById('drag-drop-overlay');
+      if (overlay) overlay.classList.add('hidden');
+
+      const importModal = document.getElementById('import-event-modal');
+      const isImportOpen = importModal && !importModal.classList.contains('hidden');
+
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        for (let i = 0; i < e.dataTransfer.files.length; i++) {
+          const f = e.dataTransfer.files[i];
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            const entry = {
+              name: f.name,
+              size: (f.size / 1024).toFixed(1) + ' KB',
+              data: evt.target.result
+            };
+            if (isImportOpen) {
+              stagedImportDocs.push(entry);
+              const cnt = document.getElementById('import-files-count');
+              if (cnt) cnt.textContent = `已挂载 ${stagedImportDocs.length} 份文档资料包`;
+              showToast(`已添加活动资料：${f.name}`);
+            } else {
+              stagedFiles.push(entry);
+              renderStagedFiles();
+              showToast(`已装入材料：${f.name}`);
+            }
+          };
+          reader.readAsDataURL(f);
+        }
+      }
+    });
+
+    // ---------- 视图切换 (工作区总览看板 vs 会话工作流) ----------
+    function updateViewNavigationButtons() {
+      const btnHome = document.getElementById('nav-btn-home');
+      const btnChat = document.getElementById('nav-btn-chat');
+      if (currentView === 'home') {
+        if (btnHome) btnHome.className = "py-1.5 px-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1 bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-sm border border-zinc-200/80 dark:border-zinc-700";
+        if (btnChat) btnChat.className = "py-1.5 px-1.5 rounded-lg text-xs font-medium transition flex items-center justify-center space-x-1 text-zinc-500 hover:text-zinc-900 dark:hover:text-white";
+      } else {
+        if (btnChat) btnChat.className = "py-1.5 px-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1 bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-sm border border-zinc-200/80 dark:border-zinc-700";
+        if (btnHome) btnHome.className = "py-1.5 px-1.5 rounded-lg text-xs font-medium transition flex items-center justify-center space-x-1 text-zinc-500 hover:text-zinc-900 dark:hover:text-white";
+      }
+    }
+
+    function switchToHomeView() {
+      currentView = 'home';
+      closeContextDrawer();
+      const homeView = document.getElementById('view-workspace-home');
+      const chatView = document.getElementById('view-chat-session');
+
+      if (homeView) homeView.classList.remove('hidden');
+      if (chatView) chatView.classList.add('hidden');
+
+      updateViewNavigationButtons();
+      renderSessionList();
+      loadWorkspaceStatus(currentEvent);
+    }
+
+    function switchToChatView() {
+      currentView = 'chat';
+      closeContextDrawer();
+      const homeView = document.getElementById('view-workspace-home');
+      const chatView = document.getElementById('view-chat-session');
+
+      if (homeView) homeView.classList.add('hidden');
+      if (chatView) chatView.classList.remove('hidden');
+
+      updateViewNavigationButtons();
+      renderSessionList();
+      renderCurrentChat();
+      const input = document.getElementById('user-input');
+      if (input) input.focus();
+    }
+
+    // ---------- 上下文抽屉管理 ----------
+    function toggleContextDrawer(tab = 'tasks') {
+      const drawer = document.getElementById('context-drawer');
+      if (!drawer) return;
+      const isOpen = !drawer.classList.contains('translate-x-full');
+      if (isOpen && currentDrawerTab === tab) {
+        closeContextDrawer();
+      } else {
+        openContextDrawer(tab);
+      }
+    }
+
+    function openContextDrawer(tab = 'tasks') {
+      currentDrawerTab = tab;
+      updateDrawerTabs();
+      const drawer = document.getElementById('context-drawer');
+      const backdrop = document.getElementById('drawer-backdrop');
+      if (drawer) drawer.classList.remove('translate-x-full');
+      if (backdrop) backdrop.classList.remove('hidden');
+    }
+
+    function closeContextDrawer() {
+      const drawer = document.getElementById('context-drawer');
+      const backdrop = document.getElementById('drawer-backdrop');
+      if (drawer) drawer.classList.add('translate-x-full');
+      if (backdrop) backdrop.classList.add('hidden');
+    }
+
+    function setDrawerTab(tab) {
+      currentDrawerTab = tab;
+      updateDrawerTabs();
+    }
+
+    function updateDrawerTabs() {
+      const tBtn = document.getElementById('drawer-tab-tasks-btn');
+      const rBtn = document.getElementById('drawer-tab-recs-btn');
+      const tPane = document.getElementById('drawer-pane-tasks');
+      const rPane = document.getElementById('drawer-pane-recs');
+
+      if (currentDrawerTab === 'tasks') {
+        if (tBtn) tBtn.className = "flex-1 py-3 text-center border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white font-bold transition";
+        if (rBtn) rBtn.className = "flex-1 py-3 text-center border-b-2 border-transparent text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium transition";
+        if (tPane) tPane.classList.remove('hidden');
+        if (rPane) rPane.classList.add('hidden');
+      } else {
+        if (rBtn) rBtn.className = "flex-1 py-3 text-center border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white font-bold transition";
+        if (tBtn) tBtn.className = "flex-1 py-3 text-center border-b-2 border-transparent text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium transition";
+        if (tPane) tPane.classList.add('hidden');
+        if (rPane) rPane.classList.remove('hidden');
+      }
+    }
+
+    // ---------- 文件原生调用与高可靠打包 (Package & Open) ----------
+    async function openFile(path) {
+      if (!path) return;
+      await fetch('/api/open_file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: path })
+      });
+      showToast('已在系统原生软件中打开');
+    }
+
+    function downloadFile(path) {
+      if (!path) return;
+      const url = '/api/download_file?path=' + encodeURIComponent(path);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = path.split('/').pop() || 'download';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('已开始下载文件');
+    }
+
+    // 高响应的打包下载与访达定位
+    async function downloadAllOutputs() {
+      const ev = currentEvent || 'websummit2026';
+      showToast('正在打包全部成果并生成 ZIP...');
+      try {
+        const res = await fetch('/api/package_outputs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: ev })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast(`已成功打包 ${data.count || 6} 份交付物，已在访达 (Finder) 中高亮定位！`);
+        } else {
+          showToast(data.message || '打包完成，已在本地归档');
+        }
+      } catch (e) {
+        // Fallback for browser standard download
+        const url = '/api/download_all_outputs?event=' + encodeURIComponent(ev);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Zoe_${ev}_deliverables.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('已触发浏览器下载');
+      }
+    }
+
+    async function openOutputsFolder() {
+      await fetch('/api/open_folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: currentEvent })
+      });
+      showToast('已在访达中打开文件夹');
+    }
+
+    // ---------- 目标活动工作区日历与切换 ----------
+    async function loadEventsCalendar() {
+      try {
+        const res = await fetch('/api/events_calendar');
+        if (res.ok) {
+          const data = await res.json();
+          eventsCatalog = data.events || [];
+          renderWorkspaceSelector();
+        }
+      } catch (e) {
+        console.error("加载目标活动日历失败:", e);
+      }
+    }
+
+    function renderWorkspaceSelector() {
+      const select = document.getElementById('sidebar-workspace-select');
+      if (!select) return;
+      select.innerHTML = eventsCatalog.map(ev => {
+        const isSelected = ev.short === currentEvent;
+        const tagText = ev.tag ? ` (${ev.tag})` : '';
+        return `<option value="${ev.short}" ${isSelected ? 'selected' : ''}>${ev.name}${tagText}</option>`;
+      }).join('');
+    }
+
+    function onSwitchWorkspace(eventShort) {
+      currentEvent = eventShort;
+      closeContextDrawer();
+      renderWorkspaceSelector();
+
+      // 查找当前工作区对应的会话列表
+      const curWsSessions = sessions.filter(s => s.event === eventShort);
+      if (curWsSessions.length > 0) {
+        currentSessionId = curWsSessions[0].id;
+      } else {
+        createSessionForEvent(eventShort, false);
+      }
+
+      renderSessionList();
+      loadWorkspaceStatus(eventShort);
+      loadVault();
+      switchToHomeView(); // 切换工作区后默认展示该工作区的看板总览
+    }
+
+    // ---------- 会话管理 (按工作区分区) ----------
+    async function loadSessions() {
+      try {
+        const res = await fetch('/api/sessions');
+        sessions = await res.json();
+        
+        sessions.forEach(s => {
+          if (!s.event) s.event = 'websummit2026';
+        });
+
+        const curWsSessions = sessions.filter(s => s.event === currentEvent);
+        if (curWsSessions.length > 0) {
+          currentSessionId = curWsSessions[0].id;
+        } else {
+          createSessionForEvent(currentEvent, false);
+        }
+
+        renderSessionList();
+        renderCurrentChat();
+        updateActiveSessionHeader();
+      } catch (e) {
+        console.error("加载会话失败:", e);
+      }
+    }
+
+    async function saveSessions() {
+      try {
+        await fetch('/api/save_sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sessions)
+        });
+        renderSessionList();
+      } catch (e) {
+        console.error("保存会话失败:", e);
+      }
+    }
+
+    function renderSessionList() {
+      const list = document.getElementById('session-list');
+      const count = document.getElementById('session-count');
+      const heading = document.getElementById('session-list-heading');
+      if (!list) return;
+
+      const matchedEv = eventsCatalog.find(e => e.short === currentEvent);
+      let evShortName = '当前活动';
+      if (matchedEv) {
+        if (matchedEv.short.includes('websummit')) evShortName = 'Web Summit';
+        else if (matchedEv.short.includes('ifa')) evShortName = 'IFA Berlin';
+        else if (matchedEv.short.includes('ces')) evShortName = 'CES';
+        else if (matchedEv.short.includes('mwc')) evShortName = 'MWC';
+        else evShortName = matchedEv.name.split(' ')[0];
+      }
+      if (heading) heading.textContent = `${evShortName} 会话`;
+
+      const curWsSessions = sessions.filter(s => s.event === currentEvent);
+      if (count) count.textContent = curWsSessions.length;
+
+      if (curWsSessions.length === 0) {
+        list.innerHTML = `
+          <div class="text-center py-4 px-2 text-[11px] text-zinc-400 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
+            暂无独立任务会话<br>
+            <button onclick="newSession()" class="text-zinc-900 dark:text-white font-bold hover:underline mt-1 inline-block">+ 新建首个会话</button>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = curWsSessions.map(s => {
+        const isCur = s.id === currentSessionId && currentView === 'chat';
+        const activeClass = isCur 
+          ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold shadow-xs border-transparent" 
+          : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-transparent";
+        return `
+          <div onclick="switchSession('${s.id}')" class="group p-2 rounded-xl text-xs flex items-center justify-between cursor-pointer transition border ${activeClass}">
+            <div class="truncate pr-1 flex items-center space-x-1.5 flex-1 min-w-0">
+              <span class="w-1.5 h-1.5 rounded-full ${isCur ? 'bg-amber-400' : 'bg-transparent'} shrink-0"></span>
+              <span class="truncate">${s.title}</span>
+            </div>
+            <div class="flex items-center space-x-1 shrink-0">
+              <span class="text-[9px] font-mono opacity-70">${s.messages ? s.messages.length : 0}条</span>
+              <button onclick="event.stopPropagation(); deleteSession('${s.id}')" class="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-400 rounded transition" title="删除该会话">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function switchSession(id) {
+      currentSessionId = id;
+      closeContextDrawer();
+      const s = sessions.find(x => x.id === id);
+      if (s && s.event && s.event !== currentEvent) {
+        currentEvent = s.event;
+        renderWorkspaceSelector();
+        loadWorkspaceStatus(currentEvent);
+        loadVault();
+      }
+      switchToChatView();
+      renderSessionList();
+      renderCurrentChat();
+      updateActiveSessionHeader();
+    }
+
+    function createSessionForEvent(eventShort, doSave = true, customTitle = null) {
+      const id = "session_" + Date.now();
+      const matched = eventsCatalog.find(e => e.short === eventShort);
+      const evName = matched ? matched.name.split(' ')[0] : '工作区';
+      const title = customTitle || `${evName} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      const newS = {
+        id: id,
+        event: eventShort,
+        title: title,
+        time: new Date().toLocaleDateString(),
+        messages: []
+      };
+      sessions.unshift(newS);
+      currentSessionId = id;
+      if (doSave) saveSessions();
+      return newS;
+    }
+
+    function newSession() {
+      createSessionForEvent(currentEvent, true);
+      switchToChatView();
+      renderSessionList();
+      renderCurrentChat();
+      updateActiveSessionHeader();
+      showToast('已新建专属会话');
+    }
+
+    function deleteSession(id) {
+      if (!confirm("确定要删除此会话推演记录吗？")) return;
+      sessions = sessions.filter(s => s.id !== id);
+      saveSessions();
+      const remaining = sessions.filter(s => s.event === currentEvent);
+      if (remaining.length > 0) {
+        switchSession(remaining[0].id);
+      } else {
+        switchToHomeView();
+      }
+      showToast('会话已删除');
+    }
+
+    function updateActiveSessionHeader() {
+      const titleElem = document.getElementById('active-session-title');
+      const badgeElem = document.getElementById('active-session-event-badge');
+      const s = sessions.find(x => x.id === currentSessionId);
+      const matched = eventsCatalog.find(e => e.short === currentEvent);
+
+      if (titleElem) titleElem.textContent = s ? s.title : '任务会话';
+      if (badgeElem) badgeElem.textContent = matched ? matched.name : currentEvent;
+    }
+
+    // ---------- 工作区状态看板与智能推荐数据加载 ----------
+    async function loadWorkspaceStatus(eventShort) {
+      const ev = eventShort || currentEvent || 'websummit2026';
+      try {
+        const res = await fetch(`/api/workspace_status?event=${encodeURIComponent(ev)}`);
+        if (res.ok) {
+          const data = await res.json();
+          renderWorkspaceHome(data);
+          renderContextDrawer(data);
+        }
+      } catch (e) {
+        console.error("加载工作区状态失败", e);
+      }
+    }
+
+    // 渲染主页总览 (Home View)
+    function renderWorkspaceHome(data) {
+      if (!data) return;
+      const hTitle = document.getElementById('home-event-title');
+      const hBadge = document.getElementById('home-status-badge');
+      const hHeadline = document.getElementById('home-headline');
+      const hVenue = document.getElementById('home-event-venue');
+      const grid = document.getElementById('home-tasks-grid');
+      const recsGrid = document.getElementById('home-recommendations-grid');
+
+      if (hTitle) hTitle.textContent = data.event_name;
+      if (hHeadline) hHeadline.textContent = `${data.event_name} 商业决策与多任务看板`;
+      if (hBadge && data.stats) {
+        hBadge.textContent = `${data.stats.done_count}/${data.stats.total_count} 闭环 · ${data.stats.progress_pct}%`;
+      }
+      if (hVenue && data.intelligence) {
+        hVenue.textContent = `${data.intelligence.venue || '欧洲主流场馆'} · ${data.intelligence.booth || '展位已就绪'}`;
+      }
+
+      // 渲染 6 大任务网格卡片 (少而精，大号高饱和数据展示)
+      if (grid && data.tasks) {
+        grid.innerHTML = data.tasks.map(t => {
+          const isDone = t.status === 'done';
+          const fileBtns = (isDone && t.primary_file) ? `
+            <div class="flex items-center space-x-1.5 pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800">
+              <button onclick="openFile('${t.primary_file.replace(/\\/g, '/')}')" class="px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 text-[10px] font-bold transition" title="在系统原生软件中打开">系统打开</button>
+              <button onclick="downloadFile('${t.primary_file.replace(/\\/g, '/')}')" class="px-2.5 py-1 rounded-full bg-white dark:bg-zinc-800 hover:bg-zinc-100 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 text-[10px] font-semibold transition" title="下载至本地">下载</button>
+            </div>
+          ` : '';
+
+          return `
+            <div class="p-5 rounded-3xl glass-card flex flex-col justify-between space-y-3 hover:border-zinc-400 dark:hover:border-zinc-600 transition group">
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-extrabold text-xs text-zinc-900 dark:text-white">${t.name}</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${isDone ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'}">${t.status_label}</span>
+                </div>
+                <p class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed font-normal">${t.desc}</p>
+              </div>
+              <div>
+                ${fileBtns}
+                <div class="pt-2">
+                  <button onclick="startTaskSession('${t.id}', '${t.name}')" class="w-full py-2 rounded-xl bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 text-xs font-bold transition flex items-center justify-center space-x-1.5 shadow-xs active:scale-95">
+                    <span>基于此任务对话</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 渲染推荐行动网格
+      if (recsGrid && data.recommendations) {
+        recsGrid.innerHTML = data.recommendations.map(r => `
+          <div class="p-5 rounded-3xl glass-card space-y-2.5 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-600 transition">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700">${r.tag}</span>
+              </div>
+              <div class="font-extrabold text-xs text-zinc-900 dark:text-white leading-snug">${r.title}</div>
+              <div class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed font-normal">${r.reason}</div>
+            </div>
+            <div class="pt-2">
+              <button onclick="executeRecommendation('${encodeURIComponent(r.prompt)}', '${r.tag}')" class="w-full py-2.5 rounded-xl bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 text-xs font-bold shadow-sm transition active:scale-95 flex items-center justify-center space-x-1.5">
+                <span>一键执行该建议</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // 渲染右侧辅助抽屉
+    function renderContextDrawer(data) {
+      if (!data) return;
+      const dTitle = document.getElementById('drawer-event-title');
+      const dSub = document.getElementById('drawer-event-subtitle');
+      const tBadge = document.getElementById('header-tasks-badge');
+      const rBadge = document.getElementById('header-recs-badge');
+      const tTabCount = document.getElementById('drawer-tasks-tab-count');
+      const rTabCount = document.getElementById('drawer-recs-tab-count');
+
+      if (dTitle) dTitle.textContent = `${data.event_name} 看板`;
+      if (dSub && data.stats) {
+        dSub.textContent = `${data.stats.done_count}/${data.stats.total_count} 任务已闭环 · ${data.recommendations ? data.recommendations.length : 5} 项行动建议`;
+      }
+      if (tBadge && data.stats) tBadge.textContent = `${data.stats.done_count}/${data.stats.total_count}`;
+      if (rBadge && data.recommendations) rBadge.textContent = data.recommendations.length;
+      if (tTabCount && data.tasks) tTabCount.textContent = data.tasks.length;
+      if (rTabCount && data.recommendations) rTabCount.textContent = data.recommendations.length;
+
+      const tasksGrid = document.getElementById('hub-tasks-grid');
+      if (tasksGrid && data.tasks) {
+        tasksGrid.innerHTML = data.tasks.map(t => {
+          const isDone = t.status === 'done';
+          const fileBtns = (isDone && t.primary_file) ? `
+            <div class="flex items-center space-x-1 mt-1.5 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+              <button onclick="openFile('${t.primary_file.replace(/\\/g, '/')}')" class="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-[10px] font-bold">系统打开</button>
+              <button onclick="downloadFile('${t.primary_file.replace(/\\/g, '/')}')" class="px-2 py-0.5 rounded-full bg-white dark:bg-zinc-800 text-zinc-500 text-[10px] border border-zinc-200">下载</button>
+            </div>
+          ` : '';
+
+          return `
+            <div class="p-3 rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/80 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-xs text-zinc-900 dark:text-white">${t.name}</span>
+                <span class="text-[10px] px-2 py-0.2 rounded-full font-mono font-bold ${isDone ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-zinc-200 text-zinc-500'}">${t.status_label}</span>
+              </div>
+              <p class="text-[10px] text-zinc-500 leading-snug">${t.desc}</p>
+              ${fileBtns}
+            </div>
+          `;
+        }).join('');
+      }
+
+      const recsList = document.getElementById('hub-recommendations-list');
+      if (recsList && data.recommendations) {
+        recsList.innerHTML = data.recommendations.map(r => `
+          <div class="p-3 rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/80 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">${r.tag}</span>
+              <button onclick="executeRecommendation('${encodeURIComponent(r.prompt)}', '${r.tag}')" class="px-2.5 py-1 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[10px] font-bold transition active:scale-95">一键执行</button>
+            </div>
+            <div class="font-bold text-xs text-zinc-900 dark:text-white leading-snug">${r.title}</div>
+            <div class="text-[10px] text-zinc-500 leading-relaxed">${r.reason}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function startTaskSession(taskId, taskName) {
+      const s = createSessionForEvent(currentEvent, true, `${taskName} 推进`);
+      switchToChatView();
+      renderSessionList();
+      renderCurrentChat();
+      updateActiveSessionHeader();
+
+      const input = document.getElementById('user-input');
+      if (input) {
+        input.value = `请协助推进【${taskName}】任务，结合当前展会最新情况进行深度推演。`;
+        sendMessage();
+      }
+    }
+
+    function executeRecommendation(encodedPrompt, tag) {
+      const prompt = decodeURIComponent(encodedPrompt);
+      closeContextDrawer();
+      const s = createSessionForEvent(currentEvent, true, `${tag || '建议'} 执行`);
+      switchToChatView();
+      renderSessionList();
+      renderCurrentChat();
+      updateActiveSessionHeader();
+
+      const input = document.getElementById('user-input');
+      if (input) {
+        input.value = prompt;
+        sendMessage();
+      }
+    }
+
+    // ---------- 工作区资产库完整弹窗与管理 (Vault) ----------
+    async function loadVault() {
+      try {
+        const ev = currentEvent || 'websummit2026';
+        const res = await fetch(`/api/vault?event=${encodeURIComponent(ev)}`);
+        if (res.ok) {
+          currentVaultData = await res.json();
+          renderVaultModal();
+          renderSidebarDeliverables();
+          updateSidebarVaultBadge();
+        }
+      } catch (e) {
+        console.error("加载资产库失败:", e);
+      }
+    }
+
+    function renderSidebarDeliverables() {
+      const container = document.getElementById('sidebar-deliverables-list');
+      if (!container) return;
+
+      const outputs = currentVaultData.event_outputs || currentVaultData.outputs || [];
+      // 严格过滤：排除 .json, .tmp, .cache, 确保绝无冰冷技术文件
+      const cleanOutputs = outputs.filter(f => {
+        const ext = (f.ext || '').toLowerCase();
+        const name = (f.name || '').toLowerCase();
+        return !['.json', '.tmp', '.cache'].includes(ext) && !name.endsWith('.json');
+      });
+
+      if (cleanOutputs.length === 0) {
+        container.innerHTML = `<div class="text-[10px] text-zinc-400 py-2 text-center font-mono">暂无已归档交付成果</div>`;
+        return;
+      }
+
+      // 取最近更新的 Top 3 交付成果
+      const topDeliverables = cleanOutputs.slice(0, 3);
+      container.innerHTML = topDeliverables.map(f => {
+        const title = f.title || f.name;
+        const tag = f.tag || (f.ext === '.pptx' ? '16:9商务PPT' : '深度分析报告');
+        return `
+          <div class="p-2 rounded-xl bg-white/70 dark:bg-zinc-800/70 border border-zinc-200/80 dark:border-zinc-700/80 flex items-center justify-between group hover:border-zinc-400 dark:hover:border-zinc-600 transition shadow-2xs">
+            <div class="min-w-0 pr-1.5 flex-1 space-y-0.5">
+              <div class="flex items-center space-x-1.5">
+                <span class="text-[9px] px-1.5 py-0.2 rounded-md bg-zinc-100 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold shrink-0">${tag}</span>
+                <span class="text-[9px] text-zinc-400 font-mono">${f.size || ''}</span>
+              </div>
+              <div class="text-[11px] font-extrabold text-zinc-900 dark:text-white truncate" title="${title}">
+                ${title}
+              </div>
+            </div>
+            <button onclick="openFile('${f.path.replace(/\\/g, '/')}')" class="px-2 py-0.5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-[10px] shrink-0 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition shadow-2xs" title="在系统原生软件中打开">
+              打开
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateSidebarVaultBadge() {
+      const badge = document.getElementById('sidebar-vault-badge');
+      if (!badge) return;
+      const outLen = currentVaultData.outputs ? currentVaultData.outputs.length : 0;
+      const inLen = currentVaultData.inputs ? currentVaultData.inputs.length : 0;
+      badge.textContent = `交付成果 ${outLen} · 输入材料 ${inLen}`;
+    }
+
+    function openVaultModal() {
+      const modal = document.getElementById('vault-modal');
+      const nameElem = document.getElementById('vault-modal-event-name');
+      const matched = eventsCatalog.find(e => e.short === currentEvent);
+      if (nameElem) nameElem.textContent = matched ? matched.name : currentEvent;
+      if (modal) modal.classList.remove('hidden');
+      renderVaultModal();
+    }
+
+    function closeVaultModal() {
+      const modal = document.getElementById('vault-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function switchVaultTab(tab) {
+      currentVaultTab = tab;
+      const bOut = document.getElementById('btn-vault-outputs');
+      const bIn = document.getElementById('btn-vault-inputs');
+      if (tab === 'outputs') {
+        if (bOut) bOut.className = "px-3 py-1 rounded-lg bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white font-bold shadow-2xs transition";
+        if (bIn) bIn.className = "px-3 py-1 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition";
+      } else {
+        if (bIn) bIn.className = "px-3 py-1 rounded-lg bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white font-bold shadow-2xs transition";
+        if (bOut) bOut.className = "px-3 py-1 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition";
+      }
+      renderVaultModal();
+    }
+
+    function renderVaultModal() {
+      const list = document.getElementById('vault-modal-list');
+      const outCount = document.getElementById('vault-outputs-count');
+      const inCount = document.getElementById('vault-inputs-count');
+
+      const files = (currentVaultTab === 'outputs') 
+        ? (currentVaultData.event_outputs || currentVaultData.outputs || []) 
+        : (currentVaultData.event_inputs || currentVaultData.inputs || []);
+
+      if (outCount) outCount.textContent = `(${currentVaultData.outputs ? currentVaultData.outputs.length : 0})`;
+      if (inCount) inCount.textContent = `(${currentVaultData.inputs ? currentVaultData.inputs.length : 0})`;
+      if (!list) return;
+
+      if (files.length === 0) {
+        list.innerHTML = `<div class="text-center py-12 text-xs text-zinc-400">当前工作区暂无相关文件</div>`;
+        return;
+      }
+
+      list.innerHTML = files.map(f => {
+        const title = f.title || f.name;
+        return `
+          <div class="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700/80 transition flex items-center justify-between">
+            <div class="min-w-0 pr-3 flex-1 space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">${f.tag || '交付成果'}</span>
+                <span class="font-extrabold text-xs text-zinc-900 dark:text-white truncate" title="${title}">${title}</span>
+              </div>
+              <div class="flex items-center space-x-2 text-[10px] text-zinc-400 font-mono">
+                <span class="truncate max-w-[200px]" title="${f.name}">${f.name}</span>
+                <span>·</span>
+                <span>${f.size}</span>
+                <span>·</span>
+                <span>${f.time || ''}</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1.5 shrink-0">
+              <button onclick="downloadFile('${f.path.replace(/\\/g, '/')}')" class="px-3 py-1 rounded-full bg-white dark:bg-zinc-700 hover:bg-zinc-100 text-[11px] text-zinc-700 dark:text-zinc-200 border border-zinc-200 font-semibold transition">
+                下载
+              </button>
+              <button onclick="openFile('${f.path.replace(/\\/g, '/')}')" class="px-3 py-1 rounded-full bg-zinc-950 dark:bg-white text-[11px] text-white dark:text-zinc-950 font-bold transition shadow-xs">
+                系统打开
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ---------- 对话渲染与交互 ----------
+    function renderCurrentChat() {
+      const thread = document.getElementById('chat-thread');
+      const hero = document.getElementById('welcome-hero');
+      const s = sessions.find(x => x.id === currentSessionId);
+      if (!thread) return;
+
+      const matched = eventsCatalog.find(e => e.short === currentEvent);
+      const wName = document.getElementById('welcome-event-name');
+      if (wName) wName.textContent = matched ? matched.name : currentEvent;
+
+      if (!s || !s.messages || s.messages.length === 0) {
+        thread.innerHTML = '';
+        if (hero) hero.classList.remove('hidden');
+        return;
+      }
+
+      if (hero) hero.classList.add('hidden');
+      thread.innerHTML = s.messages.map(m => {
+        const isUser = m.role === 'user';
+        if (isUser) {
+          return `
+            <div class="flex justify-end items-end space-x-2.5 text-right">
+              <div class="max-w-xl rounded-3xl rounded-br-sm px-5 py-3.5 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs sm:text-sm shadow-sm leading-relaxed space-y-1 text-left">
+                <div>${escapeHtml(m.content)}</div>
+                <div class="text-[9px] text-zinc-400 dark:text-zinc-500 text-right font-mono">${m.time || ''}</div>
+              </div>
+              <div class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white flex items-center justify-center font-bold text-[10px] shrink-0 mb-1" title="Zoe">
+                我
+              </div>
+            </div>
+          `;
+        } else {
+          const parsed = marked.parse(m.content || '');
+          const filesBlock = (m.output_files && m.output_files.length > 0) ? `
+            <div class="mt-3.5 pt-3 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5">
+              <div class="text-[11px] font-bold text-zinc-700 dark:text-zinc-300 flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>生成交付成果</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                ${m.output_files.map(f => {
+                  const title = f.title || f.name;
+                  return `
+                    <div class="p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
+                      <div class="min-w-0 pr-1 truncate text-xs font-bold text-zinc-900 dark:text-white" title="${title}">${title}</div>
+                      <div class="flex items-center space-x-1 shrink-0">
+                        <button onclick="downloadFile('${f.path.replace(/\\/g, '/')}')" class="px-2.5 py-1 rounded-full bg-white dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 text-[10px] font-semibold">下载</button>
+                        <button onclick="openFile('${f.path.replace(/\\/g, '/')}')" class="px-2.5 py-1 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[10px] font-bold">打开</button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : '';
+
+          const suggestionsBlock = (m.suggestions && m.suggestions.length > 0) ? `
+            <div class="mt-3 pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800 flex flex-wrap items-center gap-1.5">
+              <span class="text-[10px] font-bold text-zinc-400">下一步建议:</span>
+              ${m.suggestions.map(sug => `
+                <button onclick="quickInputSuggestion('${encodeURIComponent(sug)}')" class="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold transition">
+                  ${sug} →
+                </button>
+              `).join('')}
+            </div>
+          ` : '';
+
+          return `
+            <div class="flex space-x-3 text-left items-start">
+              <div class="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs mt-0.5" title="Zoe 智能助理">
+                <svg class="w-4 h-4 text-amber-400 dark:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              </div>
+              <div class="flex-1 max-w-2xl rounded-3xl rounded-bl-sm px-6 py-4.5 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-2xl border border-zinc-200/80 dark:border-zinc-800 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm leading-relaxed space-y-2">
+                <div class="flex items-center space-x-2 text-[10px] text-zinc-400 pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <span class="font-bold text-zinc-700 dark:text-zinc-300">Zoe 决策智能助理 · Claude Opus 5.5</span>
+                </div>
+                <div class="markdown-body">${parsed}</div>
+                ${filesBlock}
+                ${suggestionsBlock}
+                <div class="text-[9px] text-zinc-400 text-right font-mono pt-1">${m.time || ''}</div>
+              </div>
+            </div>
+          `;
+        }
+      }).join('');
+
+      const cont = document.getElementById('messages-container');
+      if (cont) cont.scrollTop = cont.scrollHeight;
+    }
+
+    // ---------- 输入框与发送逻辑 ----------
+    function handleInputKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function handleInputResize(textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 180) + 'px';
+    }
+
+    function triggerFileUpload() {
+      const uploader = document.getElementById('file-uploader');
+      if (uploader) uploader.click();
+    }
+
+    function onFilesSelected(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          stagedFiles.push({
+            name: f.name,
+            size: (f.size / 1024).toFixed(1) + ' KB',
+            data: evt.target.result
+          });
+          renderStagedFiles();
+        };
+        reader.readAsDataURL(f);
+      }
+      e.target.value = '';
+    }
+
+    function renderStagedFiles() {
+      const cont = document.getElementById('staged-files-container');
+      if (!cont) return;
+      if (stagedFiles.length === 0) {
+        cont.classList.add('hidden');
+        cont.innerHTML = '';
+        return;
+      }
+      cont.classList.remove('hidden');
+      cont.innerHTML = stagedFiles.map((f, idx) => `
+        <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
+          <svg class="w-3 h-3 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+          <span class="truncate max-w-[140px]">${f.name}</span>
+          <span class="text-[9px] text-zinc-400">(${f.size})</span>
+          <button onclick="removeStagedFile(${idx})" class="text-zinc-400 hover:text-red-500 ml-1">✕</button>
+        </span>
+      `).join('');
+    }
+
+    function removeStagedFile(idx) {
+      stagedFiles.splice(idx, 1);
+      renderStagedFiles();
+    }
+
+    function setPromptPrefix(actionKey) {
+      if (currentAction === actionKey) {
+        clearCurrentAction();
+        return;
+      }
+      currentAction = actionKey;
+      updateQuickActionButtons();
+    }
+
+    function clearCurrentAction() {
+      currentAction = null;
+      updateQuickActionButtons();
+    }
+
+    function updateQuickActionButtons() {
+      const buttons = document.querySelectorAll('.quick-action-btn');
+      buttons.forEach(btn => {
+        const act = btn.getAttribute('data-action');
+        if (act === currentAction) {
+          btn.className = "quick-action-btn px-2.5 py-1 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold transition whitespace-nowrap text-[11px] shadow-xs";
+        } else {
+          btn.className = "quick-action-btn px-2.5 py-1 rounded-full bg-white/90 dark:bg-zinc-800/90 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition whitespace-nowrap text-[11px] font-medium";
+        }
+      });
+
+      const badge = document.getElementById('action-lock-badge');
+      const name = document.getElementById('action-lock-name');
+      const map = {
+        'weekly': '事项周报',
+        'monitor': '全网监测',
+        'report': '商业复盘',
+        'compare': '展会对比',
+        'competitors': '同行排查',
+        'leads': '买家分层'
+      };
+      if (badge && name) {
+        if (currentAction && map[currentAction]) {
+          name.textContent = map[currentAction];
+          badge.classList.remove('hidden');
+          badge.classList.add('flex');
+        } else {
+          badge.classList.add('hidden');
+          badge.classList.remove('flex');
+        }
+      }
+
+      const input = document.getElementById('user-input');
+      const actionPlaceholders = {
+        'weekly': '已选择【事项周报】：输入现场零散手记或直接回车，按 5 要素责任人闭环法生成周报...',
+        'monitor': '已选择【全网监测】：输入想定向追踪的媒体/议题（可选），直接回车启动外网报道与未检出排查...',
+        'report': '已选择【商业复盘】：输入额外指导要求（可选），直接回车生成四段式报告并编译 16:9 PPT...',
+        'compare': '已选择【展会对比】：输入对比维度（可选），回车生成对数归一化公平 ROI 对比表与报告...',
+        'competitors': '已选择【同行排查】：输入关注的机器人友商（宇树/逐际等），回车全面核验参展机型与实证...',
+        'leads': '已选择【买家分层】：粘贴现场名片手记、拖入表格，或直接回车使用标杆买家数据体验分层...'
+      };
+      if (input) {
+        if (currentAction && actionPlaceholders[currentAction]) {
+          input.placeholder = actionPlaceholders[currentAction];
+        } else {
+          input.placeholder = '输入工作备忘、活动需求，或直接把材料拖拽到这里... (Enter 发送, Shift+Enter 换行, Esc 撤销模式)';
+        }
+      }
+    }
+
+    function triggerQuickAction(actionKey) {
+      setPromptPrefix(actionKey);
+      const input = document.getElementById('user-input');
+      if (input) {
+        input.focus();
+        sendMessage();
+      }
+    }
+
+    function quickInputSuggestion(encodedText) {
+      const text = decodeURIComponent(encodedText);
+      const input = document.getElementById('user-input');
+      if (input) {
+        input.value = text;
+        sendMessage();
+      }
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('user-input');
+      const text = input ? input.value.trim() : '';
+
+      if (!text && stagedFiles.length === 0 && !currentAction) {
+        return;
+      }
+
+      const action = currentAction || 'auto';
+      const promptToSend = text || (action !== 'auto' ? `执行【${action}】动作` : '请结合当前工作区展会情况展开分析。');
+      const filesToSend = [...stagedFiles];
+
+      input.value = '';
+      input.style.height = 'auto';
+      stagedFiles = [];
+      renderStagedFiles();
+      clearCurrentAction();
+
+      const s = sessions.find(x => x.id === currentSessionId);
+      if (!s) return;
+
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      s.messages.push({
+        role: 'user',
+        content: promptToSend,
+        time: now,
+        files: filesToSend
+      });
+
+      if (s.messages.length === 1 && s.title.includes('新任务') || s.title.includes('新会话')) {
+        s.title = promptToSend.slice(0, 16) + (promptToSend.length > 16 ? '...' : '');
+      }
+
+      renderCurrentChat();
+      renderSessionList();
+      updateActiveSessionHeader();
+
+      // 追加 AI 加载指示气泡
+      const thread = document.getElementById('chat-thread');
+      const loadingDiv = document.createElement('div');
+      loadingDiv.id = 'chat-loading-indicator';
+      loadingDiv.className = 'flex space-x-3 text-left items-start';
+      loadingDiv.innerHTML = `
+        <div class="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs mt-0.5">
+          <svg class="w-4 h-4 text-amber-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        </div>
+        <div class="flex-1 max-w-2xl rounded-3xl rounded-bl-sm px-6 py-4.5 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm text-zinc-500 shadow-sm leading-relaxed space-y-1">
+          <div class="flex items-center space-x-2 text-[10px] text-zinc-400 font-mono">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+            <span>Claude Opus 5.5 正在进行深度商业逻辑推演与去 AI 味文风审查...</span>
+          </div>
+        </div>
+      `;
+      if (thread) thread.appendChild(loadingDiv);
+      const cont = document.getElementById('messages-container');
+      if (cont) cont.scrollTop = cont.scrollHeight;
+
+      try {
+        const payload = {
+          message: promptToSend,
+          action: action,
+          event: currentEvent,
+          files: filesToSend,
+          history: s.messages.slice(-5)
+        };
+
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (loadingDiv && loadingDiv.parentNode) {
+          loadingDiv.parentNode.removeChild(loadingDiv);
+        }
+
+        if (res.ok) {
+          const data = await res.json();
+          s.messages.push({
+            role: 'assistant',
+            content: data.text || '已完成分析。',
+            time: data.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            output_files: data.output_files || [],
+            suggestions: data.suggestions || []
+          });
+
+          await saveSessions();
+          renderCurrentChat();
+          loadVault(); // 刷新资产库
+          loadWorkspaceStatus(currentEvent); // 刷新任务闭环进度
+        } else {
+          s.messages.push({
+            role: 'assistant',
+            content: `❌ 请求处理遇到异常（HTTP ${res.status}）。请检查网络或配置设置。`,
+            time: now,
+            output_files: [],
+            suggestions: ["重试上一轮指令", "查看错误设置"]
+          });
+          renderCurrentChat();
+        }
+      } catch (err) {
+        if (loadingDiv && loadingDiv.parentNode) {
+          loadingDiv.parentNode.removeChild(loadingDiv);
+        }
+        s.messages.push({
+          role: 'assistant',
+          content: `❌ 网络连接异常: ${err.message}`,
+          time: now,
+          output_files: [],
+          suggestions: []
+        });
+        renderCurrentChat();
+      }
+    }
+
+    // ---------- 活动导入模态框交互 ----------
+    function openImportEventModal() {
+      const m = document.getElementById('import-event-modal');
+      if (m) m.classList.remove('hidden');
+    }
+
+    function closeImportEventModal() {
+      const m = document.getElementById('import-event-modal');
+      if (m) m.classList.add('hidden');
+      stagedImportDocs = [];
+      const cnt = document.getElementById('import-files-count');
+      if (cnt) cnt.textContent = '支持批量导入参展指南、展位图、竞品笔记与名片表';
+    }
+
+    function triggerImportDocUpload() {
+      const up = document.getElementById('import-doc-uploader');
+      if (up) up.click();
+    }
+
+    function onImportDocsSelected(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          stagedImportDocs.push({
+            name: f.name,
+            size: (f.size / 1024).toFixed(1) + ' KB',
+            data: evt.target.result
+          });
+          const cnt = document.getElementById('import-files-count');
+          if (cnt) cnt.textContent = `已挂载 ${stagedImportDocs.length} 份文档资料包`;
+        };
+        reader.readAsDataURL(f);
+      }
+      e.target.value = '';
+    }
+
+    async function submitImportEvent() {
+      const name = document.getElementById('import-event-name').value.trim();
+      const start = document.getElementById('import-event-start').value;
+      const end = document.getElementById('import-event-end').value;
+      const venue = document.getElementById('import-event-venue').value.trim();
+
+      if (!name) {
+        alert("请输入展会全称");
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-import');
+      if (btn) btn.textContent = '开辟中...';
+
+      try {
+        const res = await fetch('/api/add_custom_event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name,
+            start: start,
+            end: end,
+            start_date: start,
+            end_date: end,
+            venue: venue,
+            files: stagedImportDocs
+          })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok !== false) {
+          closeImportEventModal();
+          showToast(`已成功开辟工作区：${name}`);
+          await loadEventsCalendar();
+          const newShort = data.event_short || data.short;
+          if (newShort) onSwitchWorkspace(newShort);
+        } else {
+          alert(data.message || "开辟工作区失败，请重试");
+        }
+      } catch (err) {
+        alert("网络异常: " + err.message);
+      } finally {
+        if (btn) btn.textContent = '开辟工作区';
+      }
+    }
+
+    // ---------- 设置与使用指南模态框 ----------
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/get_config');
+        if (!res.ok) return;
+        const cfg = await res.json();
+
+        const provEl = document.getElementById('cfg-provider');
+        const baseEl = document.getElementById('cfg-base-url');
+        const modEl = document.getElementById('cfg-model');
+        const indEl = document.getElementById('cfg-key-indicator');
+        const statusDot = document.getElementById('model-status-dot');
+        const statusText = document.getElementById('model-status-text');
+
+        if (provEl) provEl.value = cfg.provider || 'anthropic';
+        if (baseEl) baseEl.value = cfg.base_url || '';
+        if (modEl) modEl.value = cfg.model || 'claude-opus-5-5';
+        if (cfg.version) {
+          const vb = document.getElementById('app-version-badge');
+          const os = document.getElementById('cfg-ota-status');
+          if (vb) vb.innerText = `v${cfg.version}`;
+          if (os) os.innerText = `当前版本: v${cfg.version} · 免重下安装包`;
+        }
+
+        onProviderChanged();
+
+        if (cfg.provider === 'mock') {
+          if (indEl) {
+            indEl.innerText = '离线 Mock 演练中';
+            indEl.className = 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400';
+          }
+          if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-sky-400';
+          if (statusText) statusText.innerText = '离线 Mock 模式';
+        } else if (cfg.has_key) {
+          if (indEl) {
+            indEl.innerText = '● 已配置凭证 (••••••••)';
+            indEl.className = 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400';
+          }
+          if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+          if (statusText) statusText.innerText = 'Claude Opus 5.5 就绪';
+        } else {
+          if (indEl) {
+            indEl.innerText = '○ 尚未配置 API Key';
+            indEl.className = 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 animate-pulse';
+          }
+          if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+          if (statusText) statusText.innerText = 'Claude (待配置 Key)';
+        }
+      } catch (e) {
+        console.warn('loadConfig 异常:', e);
+      }
+    }
+
+    function onProviderChanged() {
+      const p = document.getElementById('cfg-provider')?.value;
+      const fBase = document.getElementById('cfg-field-base-url');
+      const fKey = document.getElementById('cfg-field-api-key');
+      if (p === 'mock') {
+        if (fBase) fBase.classList.add('hidden');
+        if (fKey) fKey.classList.add('hidden');
+      } else {
+        if (fBase) fBase.classList.remove('hidden');
+        if (fKey) fKey.classList.remove('hidden');
+      }
+    }
+
+    function toggleKeyVisibility() {
+      const k = document.getElementById('cfg-key');
+      if (!k) return;
+      k.type = (k.type === 'password') ? 'text' : 'password';
+    }
+
+    async function saveConfigSettings() {
+      const btn = document.getElementById('btn-save-cfg');
+      const prov = document.getElementById('cfg-provider')?.value || 'anthropic';
+      const base = document.getElementById('cfg-base-url')?.value.trim() || '';
+      const key = document.getElementById('cfg-key')?.value.trim() || '';
+      const mod = document.getElementById('cfg-model')?.value.trim() || 'claude-opus-5-5';
+
+      const upd = {
+        LLM_PROVIDER: prov,
+        LLM_MODEL: mod,
+        LLM_BASE_URL: base
+      };
+      if (key) {
+        upd.LLM_API_KEY = key;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = '保存中...';
+      }
+
+      try {
+        const res = await fetch('/api/save_config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config: upd })
+        });
+        const d = await res.json();
+        if (d.ok) {
+          showToast('配置已成功保存并实时生效！');
+          closeSettingsModal();
+          await loadConfig();
+        } else {
+          alert('保存失败: ' + (d.error || '未知错误'));
+        }
+      } catch (e) {
+        alert('保存请求出错: ' + e);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = '保存并实时生效';
+        }
+      }
+    }
+
+    async function switchToMockQuickly() {
+      const upd = {
+        LLM_PROVIDER: 'mock',
+        LLM_MODEL: 'claude-opus-5-5'
+      };
+      try {
+        await fetch('/api/save_config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config: upd })
+        });
+        showToast('已切换为离线演示模式 (无需 Key 即可体验)');
+        closeSettingsModal();
+        await loadConfig();
+      } catch (e) {
+        alert('切换异常: ' + e);
+      }
+    }
+
+    let _pendingOtaInfo = null;
+
+    async function checkForUpdates(silent = true) {
+      const btn = document.getElementById('btn-check-ota');
+      const statusEl = document.getElementById('cfg-ota-status');
+      const pill = document.getElementById('ota-update-pill');
+      if (!silent && btn) {
+        btn.disabled = true;
+        btn.innerText = '检查中...';
+      }
+      try {
+        const res = await fetch('/api/check_update');
+        const info = await res.json();
+        if (info.ok && info.has_update) {
+          _pendingOtaInfo = info;
+          if (pill) {
+            pill.innerText = `⚡ v${info.latest_version} 可更新`;
+            pill.classList.remove('hidden');
+          }
+          if (statusEl) {
+            statusEl.innerText = `发现新版本 v${info.latest_version} (${info.notes || '点击立即热更新'})`;
+          }
+          if (btn) {
+            btn.innerText = '立即更新';
+            btn.onclick = () => applyOtaUpdate();
+          }
+          if (!silent) {
+            showToast(`发现新版本 v${info.latest_version}，点击「立即更新」即可秒升！`);
+          }
+        } else {
+          if (pill) pill.classList.add('hidden');
+          if (!silent) {
+            const msg = info.ok
+              ? `当前已是最新版本 v${info.current_version}`
+              : (info.message || '暂未发现新版本');
+            if (statusEl) statusEl.innerText = msg;
+            showToast(msg);
+          }
+        }
+      } catch (e) {
+        if (!silent) showToast('检查更新失败，请检查网络连接');
+      } finally {
+        if (!silent && btn && !_pendingOtaInfo) {
+          btn.disabled = false;
+          btn.innerText = '检查更新';
+        } else if (btn && _pendingOtaInfo) {
+          btn.disabled = false;
+        }
+      }
+    }
+
+    async function applyOtaUpdate() {
+      const pill = document.getElementById('ota-update-pill');
+      const btn = document.getElementById('btn-check-ota');
+      const note = _pendingOtaInfo && _pendingOtaInfo.notes ? `\n更新内容：${_pendingOtaInfo.notes}` : '';
+      if (!confirm(`确认立即在线热更新至最新版本吗？${note}\n（不会影响您的工作区数据与密钥配置）`)) {
+        return;
+      }
+      if (pill) pill.innerText = '更新中...';
+      if (btn) { btn.disabled = true; btn.innerText = '更新中...'; }
+      showToast('正在安全拉取差量补丁并校验完整性...');
+
+      try {
+        const res = await fetch('/api/apply_update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const d = await res.json();
+        if (!d.ok) {
+          alert(d.message || '热更新失败');
+          if (pill) pill.innerText = _pendingOtaInfo ? `⚡ v${_pendingOtaInfo.latest_version} 可更新` : '⚡ 发现新版';
+          if (btn) { btn.disabled = false; btn.innerText = '立即更新'; }
+          return;
+        }
+        if (d.needs_restart) {
+          showToast(`已升级至 v${d.version}，正在自动重启生效...`);
+          await fetch('/api/restart_app', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        } else {
+          showToast(`已升级至 v${d.version}，界面即时刷新！`);
+          setTimeout(() => location.reload(), 800);
+        }
+      } catch (e) {
+        alert('热更新请求异常: ' + e.message);
+        if (btn) { btn.disabled = false; btn.innerText = '立即更新'; }
+      }
+    }
+
+    function openSettingsModal() {
+      loadConfig();
+      const m = document.getElementById('settings-modal');
+      if (m) m.classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      const m = document.getElementById('settings-modal');
+      if (m) m.classList.add('hidden');
+    }
+
+    function openTutorialModal() {
+      const m = document.getElementById('tutorial-modal');
+      if (m) m.classList.remove('hidden');
+    }
+
+    function closeTutorialModal() {
+      const m = document.getElementById('tutorial-modal');
+      if (m) m.classList.add('hidden');
+    }
+
+    // ---------- HTML 工具函数 ----------
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  </script>
+</body>
+</html>

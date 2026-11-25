@@ -1,0 +1,155 @@
+# ============ 可编辑配置 ============
+llm:
+  provider: openai_compat      # 默认适配多模型网关；若用 Claude 官方请改为 anthropic
+  model: claude-opus-5-5     # 客户最聪明、最高档位的 Claude Opus 5.5 旗舰模型
+  smart_model: claude-opus-5-5
+  fast_model: claude-3-5-haiku
+  base_url: ""
+  max_tokens: 4000
+  temperature: 0.2
+
+limits:
+  max_llm_calls_per_run: 120   # 单次运行最多调用大模型次数，防止额度失控
+  cache_hours: 12              # 搜索/网页缓存时长，重复运行不重复花钱
+
+search:
+  provider: ddg                # 会被 .env 里的 SEARCH_PROVIDER 覆盖
+  results_per_query: 8
+
+privacy:
+  redact_pii: true             # 线索表发给大模型前，自动去掉姓名/邮箱/电话
+
+brand:
+  names: ["AGIBOT", "智元机器人", "智元", "AgiBot"]
+  products: ["A3", "X2", "G2", "D1", "Luka"]
+
+# ---- 重点媒体清单：监测时逐家检索，并在报告里单独列出“命中/未检索到” ----
+watchlist:
+  - {name: Forbes,           domain: forbes.com,          region: overseas}
+  - {name: Reuters,          domain: reuters.com,         region: overseas}
+  - {name: Bloomberg,        domain: bloomberg.com,       region: overseas}
+  - {name: Financial Times,  domain: ft.com,              region: overseas}
+  - {name: CNBC,             domain: cnbc.com,            region: overseas}
+  - {name: TechCrunch,       domain: techcrunch.com,      region: overseas}
+  - {name: The Robot Report, domain: therobotreport.com,  region: overseas}
+  - {name: 新华网,            domain: news.cn,             region: CN}
+  - {name: 人民网,            domain: people.com.cn,       region: CN}
+  - {name: 央视网,            domain: cctv.com,            region: CN}
+  - {name: 中国日报,          domain: chinadaily.com.cn,   region: CN}
+  - {name: 环球网,            domain: huanqiu.com,         region: CN}
+
+# ---- 媒体库：用于给每篇报道自动标注 级别/国家 (t: 1=重点 2=行业/地方 3=其他) ----
+media_registry:
+  - {d: forbes.com, n: Forbes, t: 1, c: US}
+  - {d: reuters.com, n: Reuters, t: 1, c: GB}
+  - {d: bloomberg.com, n: Bloomberg, t: 1, c: US}
+  - {d: ft.com, n: Financial Times, t: 1, c: GB}
+  - {d: wsj.com, n: WSJ, t: 1, c: US}
+  - {d: cnbc.com, n: CNBC, t: 1, c: US}
+  - {d: bbc.com, n: BBC, t: 1, c: GB}
+  - {d: bbc.co.uk, n: BBC, t: 1, c: GB}
+  - {d: theguardian.com, n: The Guardian, t: 1, c: GB}
+  - {d: euronews.com, n: Euronews, t: 1, c: FR}
+  - {d: techcrunch.com, n: TechCrunch, t: 1, c: US}
+  - {d: wired.com, n: Wired, t: 1, c: US}
+  - {d: theverge.com, n: The Verge, t: 2, c: US}
+  - {d: techradar.com, n: TechRadar, t: 2, c: GB}
+  - {d: engadget.com, n: Engadget, t: 2, c: US}
+  - {d: therobotreport.com, n: The Robot Report, t: 2, c: US}
+  - {d: spectrum.ieee.org, n: IEEE Spectrum, t: 2, c: US}
+  - {d: interestingengineering.com, n: Interesting Engineering, t: 2, c: US}
+  - {d: heise.de, n: heise online, t: 2, c: DE}
+  - {d: handelsblatt.com, n: Handelsblatt, t: 1, c: DE}
+  - {d: lemonde.fr, n: Le Monde, t: 1, c: FR}
+  - {d: lesechos.fr, n: Les Echos, t: 1, c: FR}
+  - {d: elpais.com, n: El País, t: 1, c: ES}
+  - {d: repubblica.it, n: la Repubblica, t: 1, c: IT}
+  - {d: ilsole24ore.com, n: Il Sole 24 Ore, t: 1, c: IT}
+  - {d: publico.pt, n: Público, t: 1, c: PT}
+  - {d: expresso.pt, n: Expresso, t: 1, c: PT}
+  - {d: observador.pt, n: Observador, t: 2, c: PT}
+  - {d: dn.pt, n: Diário de Notícias, t: 2, c: PT}
+  - {d: tek.sapo.pt, n: SAPO TEK, t: 2, c: PT}
+  - {d: rtp.pt, n: RTP, t: 1, c: PT}
+  - {d: news.cn, n: 新华网, t: 1, c: CN}
+  - {d: xinhuanet.com, n: 新华网, t: 1, c: CN}
+  - {d: people.com.cn, n: 人民网, t: 1, c: CN}
+  - {d: people.cn, n: 人民网, t: 1, c: CN}
+  - {d: cctv.com, n: 央视网, t: 1, c: CN}
+  - {d: cctv.cn, n: 央视网, t: 1, c: CN}
+  - {d: chinadaily.com.cn, n: 中国日报, t: 1, c: CN}
+  - {d: huanqiu.com, n: 环球网, t: 1, c: CN}
+  - {d: globaltimes.cn, n: 环球时报英文, t: 1, c: CN}
+  - {d: cri.cn, n: 国际在线, t: 1, c: CN}
+  - {d: thepaper.cn, n: 澎湃新闻, t: 2, c: CN}
+  - {d: yicai.com, n: 第一财经, t: 2, c: CN}
+  - {d: 36kr.com, n: 36氪, t: 2, c: CN}
+  - {d: jiqizhixin.com, n: 机器之心, t: 2, c: CN}
+  - {d: qbitai.com, n: 量子位, t: 2, c: CN}
+  - {d: ithome.com, n: IT之家, t: 2, c: CN}
+  - {d: ifeng.com, n: 凤凰网, t: 2, c: CN}
+  - {d: sina.com.cn, n: 新浪, t: 2, c: CN}
+  - {d: finance.sina.com.cn, n: 新浪财经, t: 2, c: CN}
+
+social_domains:
+  linkedin: linkedin.com
+  instagram: instagram.com
+  youtube: youtube.com
+  x: x.com
+  facebook: facebook.com
+  tiktok: tiktok.com
+  weibo: weibo.com
+
+# ---- 对比打分：四个维度的权重（只比较“所有活动都有数据”的指标）----
+scoring_weights:
+  reach: 0.35         # 触达：媒体/社媒曝光、播放量、现场观众
+  quality: 0.25       # 质量：报道篇数、覆盖国家、重点媒体、奖项、“首次”事件
+  engagement: 0.20    # 互动：粉丝净增、互动量
+  conversion: 0.20    # 转化：线索、有效线索、签约伙伴
+
+# ---- 竞品清单（可自行增删）。分类: CN=中国同行 / GLOBAL=海外同行 ----
+competitors:
+  - {name: Unitree,       aliases: [Unitree, 宇树],          origin: CN}
+  - {name: UBTECH,        aliases: [UBTECH, 优必选],         origin: CN}
+  - {name: Fourier,       aliases: [Fourier Robotics, 傅利叶], origin: CN}
+  - {name: Galbot,        aliases: [Galbot, 银河通用],       origin: CN}
+  - {name: EngineAI,      aliases: [EngineAI, 众擎],         origin: CN}
+  - {name: Booster,       aliases: [Booster Robotics, 加速进化], origin: CN}
+  - {name: Kepler,        aliases: [Kepler Robotics, 开普勒], origin: CN}
+  - {name: Leju,          aliases: [Leju Robotics, 乐聚],    origin: CN}
+  - {name: Astribot,      aliases: [Astribot, 星尘智能],     origin: CN}
+  - {name: Dobot,         aliases: [Dobot, 越疆],            origin: CN}
+  - {name: XPENG IRON,    aliases: [XPENG IRON, 小鹏 IRON],  origin: CN}
+  - {name: Xiaomi,        aliases: [Xiaomi CyberOne, 小米机器人], origin: CN}
+  - {name: Tesla Optimus, aliases: [Tesla Optimus],          origin: GLOBAL}
+  - {name: Figure,        aliases: [Figure AI],              origin: GLOBAL}
+  - {name: Agility,       aliases: [Agility Robotics],       origin: GLOBAL}
+  - {name: Apptronik,     aliases: [Apptronik],              origin: GLOBAL}
+  - {name: 1X,            aliases: [1X Technologies],        origin: GLOBAL}
+  - {name: Boston Dynamics, aliases: [Boston Dynamics],      origin: GLOBAL}
+  - {name: Neura Robotics, aliases: [Neura Robotics],        origin: GLOBAL}
+
+# ---- 线索人群划分的分类体系 ----
+lead_segments:
+  - 渠道伙伴（经销商/VAD/代理）
+  - 系统集成商
+  - 终端企业-制造与工业
+  - 终端企业-物流零售酒店等服务业
+  - 教育与科研（高校/研究院/培训）
+  - 政府与公共机构
+  - 投资与咨询机构
+  - 媒体与KOL
+  - 同业/竞品
+  - 个人/其他
+
+# ---- 周报：活动闭环的七个阶段（可改）----
+weekly:
+  stages:
+    - 立项与预算
+    - 采购/合同/付款
+    - 物料与物流
+    - 现场执行
+    - 传播发布
+    - 复盘归档
+    - 沉淀复用
+    - 持续运营
