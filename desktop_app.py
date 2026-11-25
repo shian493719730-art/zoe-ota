@@ -1063,21 +1063,6 @@ class DesktopApiHandler(http.server.SimpleHTTPRequestHandler):
                     except Exception as e:
                         logger.warning(f"保存 {cfg_dir}/.env 异常: {e}")
 
-                for candidate in [ROOT / ".env", Path("/Users/mima0000/Desktop/zoe/event-agent/.env")]:
-                    try:
-                        if candidate.exists() and os.access(candidate, os.W_OK):
-                            lines = candidate.read_text(encoding="utf-8").splitlines()
-                            seen = set()
-                            for i, ln in enumerate(lines):
-                                k = ln.split("=", 1)[0].strip()
-                                if k in upd:
-                                    lines[i] = f"{k}={upd[k]}"
-                                    seen.add(k)
-                            lines += [f"{k}={v}" for k, v in upd.items() if k not in seen]
-                            candidate.write_text("\n".join(lines) + "\n", encoding="utf-8")
-                    except Exception:
-                        pass
-
                 dispatcher.reload_config()
                 self._send_json({"ok": True, "message": "配置已成功保存！"})
 

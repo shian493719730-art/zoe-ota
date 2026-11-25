@@ -1,6 +1,6 @@
 {
-  "version": "1.2.3",
-  "build": 123,
+  "version": "1.2.4",
+  "build": 124,
   "updated_at": "2026-11-25",
-  "notes": "优化通用文档上传分流、外网检索熔断防卡死与Anthropic模型容错"
+  "notes": "禁止save_config污染包内默认.env，确保灵智直连永不被覆盖"
 }

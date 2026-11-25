@@ -1,10 +1,10 @@
 {
-  "version": "1.2.3",
-  "build": 123,
+  "version": "1.2.4",
+  "build": 124,
   "updated_at": "2026-11-25",
-  "notes": "优化通用文档上传分流、外网检索熔断防卡死与Anthropic模型容错",
+  "notes": "禁止save_config污染包内默认.env，确保灵智直连永不被覆盖",
   "files": {
-    "desktop_app.py": "146d5ad43d88ec227c4db9db234b40f414b1eeb0dec3b591570e57d19ae74692",
+    "desktop_app.py": "eaeeea94c6701765d3bcdaa14435ca2530e77bbb39483c9db9e40375a0b391af",
     "config.yaml": "55c081465fdd46cff7c43458d15e2812f44c335dee6127ad22c7f034acda9e7c",
     "ui/index.html": "701beb63d709b0d2cd41732e52b4817a1d1d3a76e444d739be10bc1f87281ad3",
     "ui/vendor/marked.min.js": "3e7e7d7feb3e5d58cb6c804f68ab5c24cc7e5eb6270fd6e5cbb9124739217d0c",
@@ -31,6 +31,6 @@
     "agent/web.py": "714431c32dd6d0b078dcfa6a822d3142cd616b423bda4c3c2799393d3227265b",
     "agent/weekly.py": "b1690f1940125202b2ad6398d69d96a17b60050aa352ae9c96d4b221bb557c3a",
     "agent/workspace_hub.py": "e7d750c8ae21628cba168d3ab872f2963939d8da3ce8300ccfb8b3d43ff40d58",
-    "version.json": "adcbfae4ad8f4f4d9a3f49838c2dbca6ac45bbfbce2188b3a8873f312efceee6"
+    "version.json": "c67a196bf1bc02a55e8e367c891073cf00a9529652d35900405e0bf1ae3a1d82"
   }
 }
