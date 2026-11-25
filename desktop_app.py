@@ -14,6 +14,7 @@ import json
 import time
 import uuid
 import shutil
+import subprocess
 import urllib.parse
 from datetime import datetime
 from pathlib import Path
@@ -26,13 +27,17 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("desktop_app")
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(os.getenv("ZOE_BUNDLE_ROOT") or Path(__file__).resolve().parent)
+_live_patch = Path.home() / ".zoe" / "live_patch"
+if _live_patch.exists():
+    sys.path.insert(0, str(_live_patch))
 sys.path.insert(0, str(ROOT))
 
-from agent.config import load_config, events_dir
+from agent.config import load_config, events_dir, get_data_root
 from agent.llm import LLM, LLMError
 from agent.search import Searcher
 from agent.web import Fetcher
+from agent.file_parser import parse_uploaded_file
 from agent import weekly, monitor, report, compare, customers
 from agent.event_updater import get_events_catalog, add_custom_event
 from agent.conversational_editor import is_edit_or_supplement_request, apply_conversational_edit
@@ -42,10 +47,37 @@ DATA_DIR = Path.home() / ".agibot"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 HISTORY_DIR = DATA_DIR / "history"
 HISTORY_DIR.mkdir(parents=True, exist_ok=True)
-UPLOAD_DIR = DATA_DIR / "uploads"
+DATA_ROOT = get_data_root()
+UPLOAD_DIR = DATA_ROOT / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 SESSIONS_FILE = HISTORY_DIR / "sessions.json"
 VAULT_FILE = HISTORY_DIR / "file_vault.json"
+
+
+def _seed_workspace(code_root: Path, data_root: Path) -> None:
+    """将随安装包附带的初始展会、预置交付物同步到用户可写工作区 ~/.zoe/workspace/（绝不覆盖已有数据）。"""
+    for folder in ("events", "outputs", "weekly"):
+        src_dir = code_root / folder
+        dst_dir = data_root / folder
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        if not src_dir.exists():
+            continue
+        for item in src_dir.rglob("*"):
+            rel = item.relative_to(src_dir)
+            target = dst_dir / rel
+            if item.is_dir():
+                target.mkdir(parents=True, exist_ok=True)
+            elif item.is_file() and not target.exists():
+                if folder == "weekly" and item.name == "state.json":
+                    continue
+                target.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    shutil.copy2(item, target)
+                except Exception:
+                    pass
+
+
+_seed_workspace(ROOT, DATA_ROOT)
 
 def load_sessions() -> list[dict]:
     if SESSIONS_FILE.exists():
@@ -107,7 +139,7 @@ def detect_event_and_task(msg: str, chosen_event: str | None = None) -> tuple[st
         task_label = "深度咨询与工作流"
 
     # 2. 活动归属判定（从每日自动更新的目标活动库中动态匹配）
-    cat = get_events_catalog(root_dir=ROOT)
+    cat = get_events_catalog(root_dir=DATA_ROOT)
     catalog_events = cat.get("events", [])
     ev_map = {e["short"]: e["name"] for e in catalog_events}
     ev_map["weekly"] = "事项闭环周报管理"
@@ -299,46 +331,41 @@ def load_vault(event_short: str | None = None) -> dict:
     scanned_paths = set()
 
     # 1. 扫描 outputs/
-    for folder in [ROOT / "outputs", Path("/Users/mima0000/Desktop/AGIBOT活动复盘.app/Contents/Resources/event-agent/outputs")]:
+    for folder in [DATA_ROOT / "outputs", ROOT / "outputs"]:
         if folder.exists():
             for p in folder.glob("*"):
                 if p.is_file() and not p.name.startswith("."):
                     scanned_paths.add(p.resolve())
 
-    # 2. 扫描 events/*/outputs/
-    events_folder = ROOT / "events"
-    if events_folder.exists():
-        for ev in events_folder.iterdir():
-            if ev.is_dir():
-                out_p = ev / "outputs"
-                if out_p.exists():
-                    for p in out_p.glob("*"):
-                        if p.is_file() and not p.name.startswith("."):
-                            scanned_paths.add(p.resolve())
-
-    # 3. 扫描输入材料: events/*/docs/, metrics.yaml, notes.md
-    if events_folder.exists():
-        for ev in events_folder.iterdir():
-            if ev.is_dir():
-                docs_p = ev / "docs"
-                if docs_p.exists():
-                    for p in docs_p.glob("*"):
-                        if p.is_file() and not p.name.startswith("."):
-                            scanned_paths.add(p.resolve())
-                for spec in ("metrics.yaml", "notes.md", "notes.txt"):
-                    fp = ev / spec
-                    if fp.exists():
-                        scanned_paths.add(fp.resolve())
+    # 2. 扫描 events/*/outputs/ 和输入材料 events/*/docs/
+    for events_folder in (DATA_ROOT / "events",):
+        if events_folder.exists():
+            for ev in events_folder.iterdir():
+                if ev.is_dir():
+                    out_p = ev / "outputs"
+                    if out_p.exists():
+                        for p in out_p.glob("*"):
+                            if p.is_file() and not p.name.startswith("."):
+                                scanned_paths.add(p.resolve())
+                    docs_p = ev / "docs"
+                    if docs_p.exists():
+                        for p in docs_p.glob("*"):
+                            if p.is_file() and not p.name.startswith("."):
+                                scanned_paths.add(p.resolve())
+                    for spec in ("metrics.yaml", "notes.md", "notes.txt"):
+                        fp = ev / spec
+                        if fp.exists():
+                            scanned_paths.add(fp.resolve())
 
     # 4. 扫描 uploads/ 目录
-    for up in [UPLOAD_DIR, ROOT / "uploads", Path("/Users/mima0000/Desktop/AGIBOT活动复盘.app/Contents/Resources/event-agent/uploads")]:
+    for up in [UPLOAD_DIR, DATA_DIR / "uploads", DATA_ROOT / "uploads"]:
         if up.exists():
             for p in up.glob("*"):
                 if p.is_file() and not p.name.startswith("."):
                     scanned_paths.add(p.resolve())
 
     # 5. 扫描工作区根目录下的业务 PDF / 周报 / 说明
-    for p in [Path("/Users/mima0000/Desktop/zoe"), ROOT]:
+    for p in [DATA_ROOT, ROOT]:
         if p.exists():
             for f in p.glob("*"):
                 if f.is_file() and f.suffix.lower() in (".pdf", ".docx", ".xlsx", ".md") and not f.name.startswith("."):
@@ -454,10 +481,11 @@ def should_search_web(query: str) -> bool:
 
 class AgentDispatcher:
     def __init__(self):
-        self.cfg = load_config()
+        self.reload_config()
 
     def reload_config(self):
         self.cfg = load_config()
+        self.cfg["_data_root"] = str(DATA_ROOT)
 
     def process_message(
         self,
@@ -471,8 +499,8 @@ class AgentDispatcher:
         event_short, detected_task, ev_label, task_label = detect_event_and_task(message, chosen_event=event_short)
         self.reload_config()
         llm = LLM(self.cfg)
-        actual_event = event_short if (ROOT / "events" / event_short).exists() else ("ifa2026" if ("ifa" in event_short or "berlin" in event_short) else "websummit2026")
-        ev_dir = ROOT / "events" / actual_event
+        actual_event = event_short if (DATA_ROOT / "events" / event_short).exists() else ("ifa2026" if ("ifa" in event_short or "berlin" in event_short) else "websummit2026")
+        ev_dir = DATA_ROOT / "events" / actual_event
         ev_dir.mkdir(parents=True, exist_ok=True)
         (ev_dir / "docs").mkdir(exist_ok=True)
         (ev_dir / "outputs").mkdir(exist_ok=True)
@@ -527,8 +555,8 @@ class AgentDispatcher:
         # 1. 闭环周报（无论是否包含“周报”字样，只要输入多条事项或勾选周报动作，立即执行闭环梳理）
         if action == "weekly" or is_weekly_input(combined_text):
             try:
-                res = weekly.run_weekly(combined_text, self.cfg, llm, ROOT / "weekly")
-                md_path = ROOT / "outputs" / f"周报_{weekly.default_week_label()}.md"
+                res = weekly.run_weekly(combined_text, self.cfg, llm, DATA_ROOT / "weekly")
+                md_path = DATA_ROOT / "outputs" / f"周报_{weekly.default_week_label()}.md"
                 md_path.parent.mkdir(exist_ok=True)
                 md_path.write_text(res["markdown"], encoding="utf-8")
                 v_entry = record_vault_file(md_path, tag="闭环周报")
@@ -658,8 +686,8 @@ class AgentDispatcher:
         # 4. 横向对比 (对数归一化 + 雷达图 + Excel 动态公式)
         elif action == "compare" or ("对比" in msg_clean or "哪场" in msg_clean or "更值" in msg_clean or "roi" in lower_msg or "雷达图" in msg_clean):
             try:
-                out = compare.run_compare(ROOT / "events", self.cfg, llm, ["websummit2026", "ifa2026"], narrate=True)
-                exp = compare.export_all(out, ROOT / "outputs")
+                out = compare.run_compare(DATA_ROOT / "events", self.cfg, llm, ["websummit2026", "ifa2026"], narrate=True)
+                exp = compare.export_all(out, DATA_ROOT / "outputs")
                 v1 = record_vault_file(exp["xlsx"], tag="动态公式Excel对比表")
                 v2 = record_vault_file(exp["md"], tag="横向对比结论")
                 all_files = uploaded_vault_entries + [v1, v2]
@@ -698,7 +726,7 @@ class AgentDispatcher:
                 searcher = Searcher(self.cfg, llm)
                 fe = Fetcher(self.cfg)
                 res = customers.scan_competitors(ev_dir, self.cfg, llm, searcher, fe)
-                out_p = ROOT / "outputs" / f"竞品矩阵_{ev_dir.name}.md"
+                out_p = DATA_ROOT / "outputs" / f"竞品矩阵_{ev_dir.name}.md"
                 md_content = customers.competitor_matrix_md([res])
                 out_p.write_text(md_content, encoding="utf-8")
                 v_entry = record_vault_file(out_p, tag="同行参展矩阵")
@@ -890,7 +918,9 @@ dispatcher = AgentDispatcher()
 
 class DesktopApiHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(ROOT / "ui"), **kwargs)
+        live_ui = Path.home() / ".zoe" / "live_patch" / "ui"
+        ui_dir = live_ui if (live_ui / "index.html").exists() else (ROOT / "ui")
+        super().__init__(*args, directory=str(ui_dir), **kwargs)
 
     def log_message(self, format, *args):
         pass  # 保持终端静默
@@ -945,10 +975,10 @@ class DesktopApiHandler(http.server.SimpleHTTPRequestHandler):
             elif self.path == "/api/open_folder":
                 import subprocess
                 ev = data.get("event")
-                if ev and (ROOT / "events" / ev / "outputs").exists():
-                    folder = str(ROOT / "events" / ev / "outputs")
+                if ev and (DATA_ROOT / "events" / ev / "outputs").exists():
+                    folder = str(DATA_ROOT / "events" / ev / "outputs")
                 else:
-                    folder = data.get("path") or str(ROOT / "outputs")
+                    folder = data.get("path") or str(DATA_ROOT / "outputs")
                 if sys.platform == "darwin":
                     subprocess.Popen(["open", str(folder)])
                 elif sys.platform == "win32":
@@ -962,23 +992,23 @@ class DesktopApiHandler(http.server.SimpleHTTPRequestHandler):
                 downloads_dir.mkdir(parents=True, exist_ok=True)
                 zip_filename = f"Zoe_{ev}_deliverables.zip"
                 target_zip = downloads_dir / zip_filename
-                outputs_zip = ROOT / "outputs" / zip_filename
+                outputs_zip = DATA_ROOT / "outputs" / zip_filename
 
                 files_packed = []
                 with zipfile.ZipFile(target_zip, "w", zipfile.ZIP_DEFLATED) as zf:
-                    ev_dir = ROOT / "events" / ev / "outputs"
+                    ev_dir = DATA_ROOT / "events" / ev / "outputs"
                     if ev_dir.exists():
                         for f in ev_dir.iterdir():
                             if f.is_file() and not f.name.startswith(".") and not f.name.endswith(".zip"):
                                 zf.write(f, arcname=f"{ev}/{f.name}")
                                 files_packed.append(f.name)
-                    docs_dir = ROOT / "events" / ev / "docs"
+                    docs_dir = DATA_ROOT / "events" / ev / "docs"
                     if docs_dir.exists() and not files_packed:
                         for f in docs_dir.iterdir():
                             if f.is_file() and not f.name.startswith("."):
                                 zf.write(f, arcname=f"{ev}/inputs/{f.name}")
                                 files_packed.append(f.name)
-                    gen_dir = ROOT / "outputs"
+                    gen_dir = DATA_ROOT / "outputs"
                     if gen_dir.exists():
                         for f in gen_dir.iterdir():
                             if f.is_file() and not f.name.startswith(".") and not f.name.endswith(".zip"):
@@ -1052,7 +1082,7 @@ class DesktopApiHandler(http.server.SimpleHTTPRequestHandler):
                 self._send_json({"ok": True})
 
             elif self.path == "/api/refresh_events":
-                cat = get_events_catalog(root_dir=ROOT, force_refresh=True)
+                cat = get_events_catalog(root_dir=DATA_ROOT, force_refresh=True)
                 self._send_json({"ok": True, "catalog": cat, "message": "目标活动日历已同步更新至最新状态"})
 
             elif self.path in ("/api/add_custom_event", "/api/add_event"):
@@ -1064,7 +1094,7 @@ class DesktopApiHandler(http.server.SimpleHTTPRequestHandler):
                 files = data.get("files") or []
                 if name:
                     try:
-                        res = add_custom_event(name, start, end, venue=venue, tag=tag, root_dir=ROOT, files=files)
+                        res = add_custom_event(name, start, end, venue=venue, tag=tag, root_dir=DATA_ROOT, files=files)
                         self._send_json({
                             "ok": True,
                             "catalog": res.get("catalog"),
@@ -1135,13 +1165,13 @@ class DesktopApiHandler(http.server.SimpleHTTPRequestHandler):
             ev = params.get("event", [None])[0]
             self._send_json(load_vault(event_short=ev))
         elif self.path == "/api/events_calendar":
-            self._send_json(get_events_catalog(root_dir=ROOT))
+            self._send_json(get_events_catalog(root_dir=DATA_ROOT))
         elif self.path.startswith("/api/workspace_status"):
             query = urllib.parse.urlparse(self.path).query
             params = urllib.parse.parse_qs(query)
             ev = params.get("event", ["websummit2026"])[0]
             from agent.workspace_hub import get_workspace_task_summary
-            self._send_json(get_workspace_task_summary(ROOT, event_short=ev))
+            self._send_json(get_workspace_task_summary(DATA_ROOT, event_short=ev))
         elif self.path.startswith("/api/download_file"):
             query = urllib.parse.urlparse(self.path).query
             params = urllib.parse.parse_qs(query)
@@ -1151,7 +1181,7 @@ class DesktopApiHandler(http.server.SimpleHTTPRequestHandler):
                 return
             target_path = Path(rel_path)
             if not target_path.is_absolute():
-                target_path = ROOT / target_path
+                target_path = DATA_ROOT / target_path
             if not target_path.exists() or not target_path.is_file():
                 self.send_error(404, "File not found")
                 return
@@ -1195,12 +1225,12 @@ class DesktopApiHandler(http.server.SimpleHTTPRequestHandler):
             import io, zipfile
             zip_buf = io.BytesIO()
             with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
-                ev_dir = ROOT / "events" / ev / "outputs"
+                ev_dir = DATA_ROOT / "events" / ev / "outputs"
                 if ev_dir.exists():
                     for f in ev_dir.iterdir():
                         if f.is_file() and not f.name.startswith("."):
                             zf.write(f, arcname=f"events/{ev}/{f.name}")
-                gen_dir = ROOT / "outputs"
+                gen_dir = DATA_ROOT / "outputs"
                 if gen_dir.exists():
                     for f in gen_dir.iterdir():
                         if f.is_file() and not f.name.startswith("."):
@@ -1312,7 +1342,7 @@ def start_daily_updater():
     def _worker():
         while True:
             try:
-                get_events_catalog(root_dir=ROOT)
+                get_events_catalog(root_dir=DATA_ROOT)
             except Exception as e:
                 logger.warning(f"每日目标活动自动更新异常: {e}")
             time.sleep(3600)

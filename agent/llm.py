@@ -28,27 +28,76 @@ class BudgetExceeded(LLMError):
     pass
 
 
-def extract_json(text: str):
-    """从模型输出里尽量稳地取出 JSON（容忍 ```json 围栏、前后废话以及意外截断的自动闭合补全）。"""
-    t = text.strip()
-    t = re.sub(r"^```(?:json)?\s*|\s*```$", "", t, flags=re.S).strip()
-    try:
-        return json.loads(t)
-    except Exception:
-        pass
-    starts = [i for i in (t.find("{"), t.find("[")) if i != -1]
-    if not starts:
-        raise ValueError("输出中没有 JSON")
-    s = min(starts)
-    e = max(t.rfind("}"), t.rfind("]"))
-    if e > s:
+def _clean_json_text(s: str) -> str:
+    """修复模型常犯的未转义换行/制表符、字符串内双引号与尾部多余逗号。"""
+    out = []
+    in_str = False
+    escape = False
+    n = len(s)
+    i = 0
+    while i < n:
+        ch = s[i]
+        if escape:
+            out.append(ch)
+            escape = False
+            i += 1
+            continue
+        if ch == '\\':
+            out.append(ch)
+            escape = True
+            i += 1
+            continue
+        if ch == '"':
+            if not in_str:
+                in_str = True
+                out.append(ch)
+            else:
+                # 向前跳过空白，判断是否为合法的 JSON 字符串闭合引号
+                j = i + 1
+                while j < n and s[j] in (' ', '\t', '\r', '\n'):
+                    j += 1
+                if j >= n or s[j] in (',', ':', '}', ']'):
+                    in_str = False
+                    out.append(ch)
+                else:
+                    # 字符串内部未转义的中文/英文引述双引号
+                    out.append('\\"')
+            i += 1
+            continue
+        if in_str:
+            if ch == '\n':
+                out.append('\\n')
+            elif ch == '\r':
+                out.append('\\r')
+            elif ch == '\t':
+                out.append('\\t')
+            else:
+                out.append(ch)
+        else:
+            out.append(ch)
+        i += 1
+    res = "".join(out)
+    res = re.sub(r",(\s*[}\]])", r"\1", res)
+    return res
+
+
+def _try_parse_json(s: str):
+    for candidate in (s, re.sub(r",(\s*[}\]])", r"\1", s)):
         try:
-            return json.loads(t[s:e + 1])
+            return json.loads(candidate, strict=False)
         except Exception:
             pass
+    cleaned = _clean_json_text(s)
+    try:
+        return json.loads(cleaned, strict=False)
+    except Exception:
+        return None
 
-    # 尝试自动补合截断的 JSON (栈式括号自动闭合)
-    sub = t[s:]
+
+def _repair_truncated_json(sub: str):
+    sub = _clean_json_text(sub).rstrip()
+    while sub.endswith("\\"):
+        sub = sub[:-1]
     stack = []
     in_str = False
     escape = False
@@ -70,12 +119,46 @@ def extract_json(text: str):
                     stack.pop()
     if in_str:
         sub += '"'
+    sub = sub.rstrip()
+    if sub.endswith(":"):
+        sub += "null"
+    elif sub.endswith(","):
+        sub = sub[:-1]
+    # 若在字典末尾只写了 key 而没有冒号（如 {"a": 1, "incomplete_key"），补 : null
+    if stack and stack[-1] == '}' and re.search(r'(?:^|[,{])\s*"(?:[^"\\]|\\.)*"\s*$', sub):
+        sub += ": null"
     while stack:
         sub += stack.pop()
+    sub = re.sub(r",(\s*[}\]])", r"\1", sub)
     try:
-        return json.loads(sub)
+        return json.loads(sub, strict=False)
     except Exception:
-        pass
+        return None
+
+
+def extract_json(text: str):
+    """从模型输出里尽量稳地取出 JSON（容忍 ```json 围栏、未转义引号/换行、尾逗号与意外截断自动补全）。"""
+    t = text.strip()
+    t = re.sub(r"^```(?:json)?\s*", "", t, flags=re.I)
+    t = re.sub(r"\s*```$", "", t).strip()
+
+    parsed = _try_parse_json(t)
+    if parsed is not None:
+        return parsed
+
+    starts = [i for i in (t.find("{"), t.find("[")) if i != -1]
+    if not starts:
+        raise ValueError("输出中没有 JSON")
+    s = min(starts)
+    e = max(t.rfind("}"), t.rfind("]"))
+    if e > s:
+        parsed = _try_parse_json(t[s:e + 1])
+        if parsed is not None:
+            return parsed
+
+    repaired = _repair_truncated_json(t[s:])
+    if repaired is not None:
+        return repaired
 
     raise ValueError("输出中的 JSON 格式异常且无法自动修复")
 
@@ -210,6 +293,9 @@ class LLM:
         if r.status_code == 400 and "max_completion_tokens" in r.text:
             body["max_completion_tokens"] = body.pop("max_tokens")
             body.pop("temperature", None)
+            r = self._post(url, headers, body)
+        elif r.status_code == 400 and "max_tokens" in r.text.lower() and body.get("max_tokens", 0) > 4096:
+            body["max_tokens"] = 4096
             r = self._post(url, headers, body)
         elif r.status_code == 400 and "temperature" in r.text:
             body.pop("temperature", None)

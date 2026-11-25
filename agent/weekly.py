@@ -68,7 +68,25 @@ def run_weekly(notes: str, cfg: dict, llm: LLM, wdir: Path, label: str | None = 
                    "next": i.get("next")} for i in state["items"] if i.get("status") != "done"]
     payload = {"notes": notes, "open_items": open_items, "stages": stages, "week": label}
     user = f"<<JSON>>{json.dumps(payload, ensure_ascii=False)}<<END>>"
-    res = llm.chat_json(prompts.WEEKLY_UPDATE, user, max_tokens=4000)
+    from .llm import LLMError
+    try:
+        res = llm.chat_json(prompts.WEEKLY_UPDATE, user, max_tokens=8000)
+    except LLMError as err:
+        if "JSON" not in str(err):
+            raise
+        # 若模型输入过长或未严格按 JSON 返回，优雅降级为直接输出高管级结构化周报 Markdown
+        md_sys = (
+            "你是欧洲市场部资深运营总监级周报润色与闭环助理。请直接输出一份结构清晰、结论先行的 Markdown 周报：\n"
+            "1. 【风险卡点与需决策事项】前置置顶；\n"
+            "2. 【本周核心成果与交付进展】逐条按「事项 / 核心进展 / 闭环凭证或待补项 / 下一步行动」专业润色；\n"
+            "3. 严禁虚构数字或人名，忠于原文，去除空话套话。"
+        )
+        md_user = f"【本周周期：{label}】\n请对以下工作记录进行专业润色与闭环整理：\n\n{notes}"
+        md = llm.chat(md_sys, md_user, max_tokens=6000)
+        wdir.mkdir(parents=True, exist_ok=True)
+        safe = label.replace("/", "-")
+        (wdir / f"weekly_{safe}.md").write_text(md, encoding="utf-8")
+        return {"label": label, "summary": {}, "items": [], "carry": [], "asks": [], "conflicts": [], "markdown": md}
 
     by_id = {i["id"]: i for i in state["items"]}
     touched = set()

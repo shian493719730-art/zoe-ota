@@ -46,20 +46,35 @@ def _is_safe_relpath(rel: str) -> bool:
     return r in ALLOWED_EXACT or any(r.startswith(p) for p in ALLOWED_PREFIXES)
 
 
+def get_live_patch_dir() -> Path:
+    return Path.home() / ".zoe" / "live_patch"
+
+
+def _is_dir_writable(d: Path) -> bool:
+    s = str(d)
+    if "AppTranslocation" in s or s.startswith("/Volumes/"):
+        return False
+    return os.access(d, os.W_OK)
+
+
 def get_local_version(root_dir: Path) -> dict:
-    vp = Path(root_dir) / "version.json"
-    if vp.exists():
-        try:
-            data = json.loads(vp.read_text(encoding="utf-8"))
-            return {
-                "version": str(data.get("version", "1.2.1")),
-                "build": int(data.get("build", 121)),
-                "updated_at": data.get("updated_at", ""),
-                "notes": data.get("notes", ""),
-            }
-        except Exception:
-            pass
-    return {"version": "1.2.1", "build": 121, "updated_at": "", "notes": ""}
+    best = None
+    for base in (get_live_patch_dir(), Path(root_dir)):
+        vp = base / "version.json"
+        if vp.exists():
+            try:
+                data = json.loads(vp.read_text(encoding="utf-8"))
+                info = {
+                    "version": str(data.get("version", "1.2.1")),
+                    "build": int(data.get("build", 121)),
+                    "updated_at": data.get("updated_at", ""),
+                    "notes": data.get("notes", ""),
+                }
+                if best is None or info["build"] > best["build"]:
+                    best = info
+            except Exception:
+                pass
+    return best or {"version": "1.2.1", "build": 121, "updated_at": "", "notes": ""}
 
 
 def _resolve_candidate_bases() -> list[str]:
@@ -123,10 +138,12 @@ def check_for_update(root_dir: Path) -> dict:
 
     changed = []
     files_map = manifest.get("files", {})
+    patch_dir = get_live_patch_dir()
     for rel, expected_sha in files_map.items():
         if not _is_safe_relpath(rel):
             continue
-        local_file = root / rel
+        patched_file = patch_dir / rel
+        local_file = patched_file if patched_file.exists() else (root / rel)
         if not local_file.exists() or _sha256_file(local_file) != expected_sha:
             changed.append(rel)
 
@@ -164,8 +181,12 @@ def apply_update(root_dir: Path) -> dict:
     if not manifest:
         return {"ok": False, "message": err or "拉取更新清单失败"}
 
+    target_root = root if _is_dir_writable(root) else get_live_patch_dir()
+    target_root.mkdir(parents=True, exist_ok=True)
+    target_root = target_root.resolve()
+
     files_map = manifest.get("files", {})
-    staging = root / ".update_staging"
+    staging = Path.home() / ".zoe" / ".update_staging"
     if staging.exists():
         shutil.rmtree(staging, ignore_errors=True)
     staging.mkdir(parents=True, exist_ok=True)
@@ -192,11 +213,11 @@ def apply_update(root_dir: Path) -> dict:
             stage_target.write_bytes(content)
             downloaded.append((rel, stage_target))
 
-        # 全部下载并通过 SHA256 校验后，再原子写入应用目录
+        # 全部下载并通过 SHA256 校验后，再原子写入目标目录（应用内或 ~/.zoe/live_patch）
         needs_restart = False
         for rel, src in downloaded:
-            dest = (root / rel).resolve()
-            if not str(dest).startswith(str(root)):
+            dest = (target_root / rel).resolve()
+            if not str(dest).startswith(str(target_root)):
                 continue
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dest)
@@ -210,7 +231,7 @@ def apply_update(root_dir: Path) -> dict:
             "updated_at": manifest.get("updated_at", ""),
             "notes": manifest.get("notes", ""),
         }
-        (root / "version.json").write_text(json.dumps(new_ver, ensure_ascii=False, indent=2), encoding="utf-8")
+        (target_root / "version.json").write_text(json.dumps(new_ver, ensure_ascii=False, indent=2), encoding="utf-8")
 
         return {
             "ok": True,

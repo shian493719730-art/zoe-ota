@@ -26,7 +26,7 @@ def can_fetch(url: str) -> bool:
 
 class Fetcher:
     def __init__(self, cfg: dict):
-        root = Path(cfg["_root"]) / ".cache" / "pages"
+        root = Path(cfg.get("_data_root") or cfg["_root"]) / ".cache" / "pages"
         self.cache = FileCache(root, float(cfg.get("limits", {}).get("cache_hours", 12)))
 
     def fetch(self, url: str, max_chars: int = 9000) -> dict:

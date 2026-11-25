@@ -3,7 +3,15 @@ import os
 from pathlib import Path
 import yaml
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(os.getenv("ZOE_BUNDLE_ROOT") or Path(__file__).resolve().parent.parent)
+
+
+def get_data_root() -> Path:
+    """获取可写的业务工作区根目录（防止 AppTranslocation / 只读 DMG 导致 Errno 30）。"""
+    env_dir = os.getenv("ZOE_DATA_DIR", "").strip()
+    d = Path(env_dir) if env_dir else (Path.home() / ".zoe" / "workspace")
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 
 def _load_env() -> None:

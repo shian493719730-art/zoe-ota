@@ -100,7 +100,7 @@ class Searcher:
         self.key = s.get("api_key", "")
         self.n = int(s.get("results_per_query", 8))
         self.llm = llm
-        root = Path(cfg["_root"]) / ".cache" / "search"
+        root = Path(cfg.get("_data_root") or cfg["_root"]) / ".cache" / "search"
         self.cache = FileCache(root, float(cfg.get("limits", {}).get("cache_hours", 12)))
         self.calls = 0
 
