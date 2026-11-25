@@ -102,15 +102,20 @@ def save_sessions(sessions: list[dict]):
     except Exception as e:
         logger.warning(f"保存会话失败: {e}")
 
+def _is_fatal_llm_error(err: Exception) -> bool:
+    s = str(err)
+    return any(k in s for k in ("没有配置 API Key", "API Key", "api_key", "401", "authentication_error", "BudgetExceeded", "调用上限"))
+
+
 def format_error_msg(err: Exception) -> str:
     s = str(err)
-    if "没有配置 API Key" in s or "API Key" in s or "api_key" in s:
+    if "没有配置 API Key" in s or "API Key" in s or "api_key" in s or "401" in s or "authentication_error" in s:
         return (
-            "**提示：尚未配置大模型 API Key**\n\n"
-            "请点击软件界面左下角 **【Claude Opus 5.5 就绪】** 设置弹窗，填入您手头的 API 网关地址与 Key（系统已默认锁定顶格旗舰 **Claude Opus 5.5**）。\n\n"
-            "• 若您当前处于无 Key 离线演示状态，也可在设置中将接口类型切换为 **【本地离线演练 Mock】**，即可零额度无限制体验完整功能与真实成果文件生成！"
+            "**提示：大模型接口鉴权未通过或尚未配置 API Key**\n\n"
+            "请点击软件界面左下角 **`[ ⚙ ]` 设置弹窗**，核对网关地址与 Key（已默认适配公司内网灵智平台 `https://lingzhi.agibot.com`）。\n\n"
+            "• 若您当前处于离线环境，也可在设置弹窗一键切换为 **【本地离线演练 Mock】**，完整体验全部功能。"
         )
-    return f"任务执行异常: {s}"
+    return f"当前请求处理受限（{s}），请稍后重试或检查网络连接。"
 
 def detect_event_and_task(msg: str, chosen_event: str | None = None) -> tuple[str, str, str, str]:
     """返回 (event_short, task_category, event_label, task_label)
@@ -474,8 +479,19 @@ def is_weekly_input(text: str) -> bool:
 
 
 def should_search_web(query: str) -> bool:
-    q = query.lower()
-    search_triggers = ["搜索", "检索", "外网", "报道", "最新", "新闻", "舆情", "媒体", "新华社", "福布斯", "查一下", "找一下", "社媒", "评价", "谁参展", "法规", "动态", "怎么样"]
+    q = (query or "").lower().strip()
+    if not q or len(q) > 2500:
+        # 超长本地粘贴正文且带润色意图时无需浪费外网检索
+        if any(k in q for k in ("润色", "校对", "改写", "翻译")):
+            return False
+    if any(k in q for k in ("润色", "校对")) and len(q) > 80:
+        return False
+    search_triggers = [
+        "搜索", "检索", "外网", "报道", "最新", "新闻", "舆情", "媒体", "新华社", "福布斯",
+        "查一下", "找一下", "社媒", "评价", "谁参展", "法规", "动态", "怎么样", "是什么",
+        "有哪些", "推荐", "供应商", "协会", "官网", "地址", "参会", "展会", "政策", "标准",
+        "unido", "bett", "vivatech", "ifa", "mwc", "ces", "hannover", "？", "?"
+    ]
     return any(w in q for w in search_triggers)
 
 
@@ -486,6 +502,110 @@ class AgentDispatcher:
     def reload_config(self):
         self.cfg = load_config()
         self.cfg["_data_root"] = str(DATA_ROOT)
+
+    def _opus_web_answer(
+        self,
+        llm: LLM,
+        combined_text: str,
+        msg_clean: str,
+        ev_dir: Path,
+        event_short: str,
+        ev_label: str,
+        detected_task: str,
+        task_label: str,
+        uploaded_vault_entries: list[dict],
+        web_search_enabled: bool,
+        history: list[dict] | None,
+        now_str: str,
+    ) -> dict:
+        """通用 Opus + 实时外网检索回答引擎（同时承担超出预设模板或子流程异常时的兜底救援）。"""
+        web_context = ""
+        search_q = (msg_clean or combined_text[:120]).strip()
+        if web_search_enabled and search_q and should_search_web(msg_clean or combined_text):
+            try:
+                searcher = Searcher(self.cfg, llm)
+                hits = searcher.search(search_q[:160], max_results=4)
+                if hits:
+                    web_context = "\n\n【实时外网联网检索结果参考】：\n" + "\n".join([
+                        f"- [{h.title}]({h.url}): {h.snippet}" for h in hits
+                    ])
+            except Exception as err:
+                logger.info(f"联网检索跳过: {err}")
+
+        sys_prompt = f"""你是 Zoe 欧洲市场部的活动复盘与商业智能决策总监级助理。
+你熟悉机器人产品矩阵（A3、X2、G2、D1、Luka）以及欧洲各场展会活动（Web Summit Lisbon、IFA Berlin、CES、MWC、Hannover、UNIDO 等）。
+你正在协助欧洲市场部主管 Zoe。
+
+【当前聚焦的工作区视角】：
+- 当前活动：{ev_label} ({event_short})
+- 举办地与场馆：{ev_dir.name}
+
+【Zoe 实战文风 · 严禁AI套话规范】：
+{DE_AI_RULES}
+
+请以专业、务实、干练的高级市场运营专家口吻回答。
+1. 直接解决用户的真实需求（无论是周报润色、文档解读、行业/供应商/展会调研、邮件起草还是策略建议），不要要求用户去匹配固定模板或重复提问。
+2. 如果用户在纠正、澄清、否定上一轮话题或指代特定展会（例如“不是...，是...那个”、“切换到柏林/IFA”），立即明确确认并切换焦点。
+3. 结合实际产品与欧洲海外商业化场景给出切实建议；结论与硬核事实先行，绝不使用空洞套话。
+4. 在文末给出 3 条可立即执行的下一步推进建议。"""
+
+        history_block = ""
+        if history:
+            history_block = "\n\n【本轮工作区近期上下文对话回顾】：\n"
+            for h in history[-4:]:
+                role = "用户" if h.get("role") == "user" else "AI助手"
+                c_snip = (h.get("content") or "").strip()[:500]
+                history_block += f"- {role}: {c_snip}\n"
+
+        user_prompt = f"【用户最新指令与材料】：\n{combined_text}\n{history_block}{web_context}"
+        ans = llm.chat(sys_prompt, user_prompt)
+        ans = sanitize_ai_cliches(ans)
+
+        suggestions = [
+            f"查看 {ev_label} 商业复盘报告与 PPT",
+            f"启动针对 {ev_label} 的全网媒体与竞品排查",
+            f"梳理 {ev_label} 的意向买家与跟进策略",
+        ]
+        return {
+            "text": ans,
+            "files": uploaded_vault_entries,
+            "input_files": uploaded_vault_entries,
+            "output_files": [],
+            "event": event_short,
+            "event_label": ev_label,
+            "task_type": detected_task,
+            "task_label": task_label,
+            "suggestions": suggestions,
+            "time": now_str,
+            "model": llm.model,
+        }
+
+    def _rescue_or_error(
+        self,
+        err: Exception,
+        llm: LLM,
+        combined_text: str,
+        msg_clean: str,
+        ev_dir: Path,
+        event_short: str,
+        ev_label: str,
+        detected_task: str,
+        task_label: str,
+        uploaded_vault_entries: list[dict],
+        web_search_enabled: bool,
+        history: list[dict] | None,
+        now_str: str,
+    ) -> dict:
+        if _is_fatal_llm_error(err):
+            return {"text": format_error_msg(err), "time": now_str}
+        logger.warning(f"子流程降级为 Opus + 联网直出 ({task_label}): {err}")
+        try:
+            return self._opus_web_answer(
+                llm, combined_text, msg_clean, ev_dir, event_short, ev_label,
+                detected_task, task_label, uploaded_vault_entries, web_search_enabled, history, now_str
+            )
+        except Exception as err2:
+            return {"text": format_error_msg(err2), "time": now_str}
 
     def process_message(
         self,
@@ -584,7 +704,10 @@ class AgentDispatcher:
                     "model": llm.model
                 }
             except Exception as e:
-                return {"text": format_error_msg(e), "time": now_str}
+                return self._rescue_or_error(
+                    e, llm, combined_text, msg_clean, ev_dir, event_short, ev_label,
+                    detected_task, task_label, uploaded_vault_entries, web_search_enabled, history, now_str
+                )
 
         # 2. 全网活动监测（联网深度抓取媒体深度评论）
         elif action == "monitor" or ("监测" in msg_clean or "福布斯" in msg_clean or "舆情" in msg_clean or "媒体" in msg_clean or "报道" in msg_clean):
@@ -643,7 +766,10 @@ class AgentDispatcher:
                     "model": llm.model
                 }
             except Exception as e:
-                return {"text": format_error_msg(e), "time": now_str}
+                return self._rescue_or_error(
+                    e, llm, combined_text, msg_clean, ev_dir, event_short, ev_label,
+                    detected_task, task_label, uploaded_vault_entries, web_search_enabled, history, now_str
+                )
 
         # 3. 四段式报告 (PPTX + MD) - 严格遵循高管汇报 Skill (Failures Front-loaded)
         elif action == "report" or ("报告" in msg_clean or "ppt" in lower_msg or "幻灯片" in msg_clean or "四段式" in msg_clean):
@@ -681,7 +807,10 @@ class AgentDispatcher:
                     "model": llm.model
                 }
             except Exception as e:
-                return {"text": format_error_msg(e), "time": now_str}
+                return self._rescue_or_error(
+                    e, llm, combined_text, msg_clean, ev_dir, event_short, ev_label,
+                    detected_task, task_label, uploaded_vault_entries, web_search_enabled, history, now_str
+                )
 
         # 4. 横向对比 (对数归一化 + 雷达图 + Excel 动态公式)
         elif action == "compare" or ("对比" in msg_clean or "哪场" in msg_clean or "更值" in msg_clean or "roi" in lower_msg or "雷达图" in msg_clean):
@@ -718,7 +847,10 @@ class AgentDispatcher:
                     "model": llm.model
                 }
             except Exception as e:
-                return {"text": format_error_msg(e), "time": now_str}
+                return self._rescue_or_error(
+                    e, llm, combined_text, msg_clean, ev_dir, event_short, ev_label,
+                    detected_task, task_label, uploaded_vault_entries, web_search_enabled, history, now_str
+                )
 
         # 5. 中国机器人竞品排查
         elif action == "competitors" or any(k in msg_clean for k in ("竞品", "同行", "宇树", "逐际", "星动纪元", "机器人展区", "参展证据", "展品机型", "同行矩阵", "机型")):
@@ -751,7 +883,10 @@ class AgentDispatcher:
                     "model": llm.model
                 }
             except Exception as e:
-                return {"text": format_error_msg(e), "time": now_str}
+                return self._rescue_or_error(
+                    e, llm, combined_text, msg_clean, ev_dir, event_short, ev_label,
+                    detected_task, task_label, uploaded_vault_entries, web_search_enabled, history, now_str
+                )
 
         # 6. 客户线索画像分层与买家筛选
         is_negation_or_clarification = any(neg in msg_clean for neg in ("不是", "不要", "不对", "别", "无需", "并不", "换成", "转到", "我是说", "我说的是", "是那个", "那个"))
@@ -781,41 +916,42 @@ class AgentDispatcher:
         )
 
         if is_leads_task:
-            # 如果用户明确触发了分层动作，但既未上传文件也未粘贴手记：实时调用 Claude Opus 5.5 进行专业引导，绝不返回死板硬编码模板
-            if not leads_file and not has_pasted_leads and not wants_demo:
-                lead_sys = f"""你是 Zoe 欧洲市场部的活动复盘与商业智能决策总监级助理。
+            try:
+                has_doc_leads = bool(files_text_block and not leads_file)
+                # 如果用户明确触发了分层动作，但既未上传任何材料也未粘贴手记：实时调用 Claude Opus 进行专业引导
+                if not leads_file and not has_pasted_leads and not has_doc_leads and not wants_demo:
+                    lead_sys = f"""你是 Zoe 欧洲市场部的活动复盘与商业智能决策总监级助理。
 用户是欧洲市场部主管 Zoe，她当前在【{ev_label}】工作区内想要推进客户线索画像分层。
 但当前尚未上传名单表格文件，也未粘贴现场手记。
 
 请以专业、干练、务实的高级专家口吻回复 Zoe：
 1. 明确表明系统已就绪为【{ev_label}】进行本地物理脱敏（严格符合德国 DSGVO 与欧盟法规，姓名/邮箱/电话在本地抹除）与 10 类画像分层。
-2. 告知 Zoe 可以直接将现场沟通笔记或名片备忘粘贴在对话框，或直接拖入 Excel/CSV 表格。
+2. 告知 Zoe 可以直接将现场沟通笔记或名片备忘粘贴在对话框，或直接拖入 Excel/CSV/Word/PDF 表格。
 3. 若手头暂无现成名单，也可直接点击下方快捷建议或回复“跑样板”，一键使用该展会的实战标杆买家数据先行体验分层成果。
 严禁使用假大空AI套话。"""
-                text = llm.chat(lead_sys, msg_clean or "请对我上传的展会买家名单进行本地脱敏，并划分 10 类画像与高意向客户跟进策略。")
-                text = sanitize_ai_cliches(text)
-                suggestions = [
-                    f"使用 {ev_label} 标杆买家数据立即分层",
-                    "我直接粘贴 5 条客户现场洽谈手记",
-                    "查看 10 类客户画像分类标准与跟进策略"
-                ]
-                return {
-                    "text": text,
-                    "files": uploaded_vault_entries,
-                    "input_files": uploaded_vault_entries,
-                    "output_files": [],
-                    "event": event_short,
-                    "event_label": ev_label,
-                    "task_type": "leads",
-                    "task_label": "客户线索画像分层",
-                    "suggestions": suggestions,
-                    "time": now_str,
-                    "model": llm.model
-                }
+                    text = llm.chat(lead_sys, msg_clean or "请对我上传的展会买家名单进行本地脱敏，并划分 10 类画像与高意向客户跟进策略。")
+                    text = sanitize_ai_cliches(text)
+                    suggestions = [
+                        f"使用 {ev_label} 标杆买家数据立即分层",
+                        "我直接粘贴 5 条客户现场洽谈手记",
+                        "查看 10 类客户画像分类标准与跟进策略"
+                    ]
+                    return {
+                        "text": text,
+                        "files": uploaded_vault_entries,
+                        "input_files": uploaded_vault_entries,
+                        "output_files": [],
+                        "event": event_short,
+                        "event_label": ev_label,
+                        "task_type": "leads",
+                        "task_label": "客户线索画像分层",
+                        "suggestions": suggestions,
+                        "time": now_str,
+                        "model": llm.model
+                    }
 
-            try:
-                if has_pasted_leads and not leads_file:
-                    res = customers.classify_leads_from_text(ev_dir, msg_clean, self.cfg, llm)
+                if (has_pasted_leads or has_doc_leads) and not leads_file:
+                    res = customers.classify_leads_from_text(ev_dir, combined_text, self.cfg, llm)
                 else:
                     res = customers.classify_leads(ev_dir, self.cfg, llm, leads_file=leads_file)
 
@@ -848,72 +984,18 @@ class AgentDispatcher:
                     "model": llm.model
                 }
             except Exception as e:
-                return {"text": format_error_msg(e), "time": now_str}
+                return self._rescue_or_error(
+                    e, llm, combined_text, msg_clean, ev_dir, event_short, ev_label,
+                    detected_task, task_label, uploaded_vault_entries, web_search_enabled, history, now_str
+                )
 
-        # 7. 通用智能商业决策对话（内置 Claude Opus 5.5 旗舰大模型 + 实时外网检索 + 去AI味实战文风）
+        # 7. 通用智能商业决策对话（内置 Claude Opus + 实时外网检索 + 去AI味实战文风）
         else:
             try:
-                web_context = ""
-                # 如果开启了外网检索且问题包含新闻/外部/法规/竞品动态
-                if web_search_enabled and should_search_web(combined_text):
-                    try:
-                        searcher = Searcher(self.cfg, llm)
-                        hits = searcher.search(msg_clean, max_results=4)
-                        if hits:
-                            web_context = "\n\n【实时外网联网检索结果参考】：\n" + "\n".join([
-                                f"- [{h.title}]({h.url}): {h.snippet}" for h in hits
-                            ])
-                    except Exception as err:
-                        print(f"联网检索跳过: {err}")
-
-                sys_prompt = f"""你是 Zoe 欧洲市场部的活动复盘与商业智能决策总监级助理。
-你熟悉机器人产品矩阵（A3、X2、G2、D1、Luka）以及欧洲各场展会活动（Web Summit Lisbon、IFA Berlin、CES、MWC、Hannover 等）。
-你正在协助欧洲市场部主管 Zoe。
-
-【当前聚焦的工作区视角】：
-- 当前活动：{ev_label} ({event_short})
-- 举办地与场馆：{ev_dir.name}
-
-【Zoe 实战文风 · 严禁AI套话规范】：
-{DE_AI_RULES}
-
-请以专业、务实、干练的高级市场运营专家口吻回答。
-1. 如果用户在纠正、澄清、否定上一轮话题或指代特定展会（例如“不是...，是...那个”、“切换到柏林/IFA”），请立即明确确认理解，并迅速将焦点切换到用户所指的目标展会或主题上，绝不机械重复之前的模板。
-2. 结合实际产品与欧洲海外商业化场景（如德国 DACH 区域制造业客户如 Miele、Brose、Siemens，或展会复盘/媒体声量）给出切实建议。
-3. 结论与硬核事实先行，多用实词动词与数字，绝不使用空洞排比、抒情与假大空套话。
-4. 提供 3 条针对该展会或下一步行动的专业推进建议。"""
-
-                history_block = ""
-                if history:
-                    history_block = "\n\n【本轮工作区近期上下文对话回顾】：\n"
-                    for h in history[-4:]:
-                        role = "用户" if h.get("role") == "user" else "AI助手"
-                        c_snip = (h.get("content") or "").strip()[:500]
-                        history_block += f"- {role}: {c_snip}\n"
-
-                user_prompt = f"【用户最新指令】：\n{combined_text}\n{history_block}{web_context}"
-                ans = llm.chat(sys_prompt, user_prompt)
-                ans = sanitize_ai_cliches(ans)
-
-                # 生成下一步智能补充建议
-                suggestions = [
-                    f"查看 {ev_label} 商业复盘报告与 PPT",
-                    f"启动针对 {ev_label} 的全网媒体与竞品排查",
-                    f"梳理 {ev_label} 的意向买家与跟进策略"
-                ]
-                return {
-                    "text": ans,
-                    "files": uploaded_vault_entries,
-                    "input_files": uploaded_vault_entries,
-                    "output_files": [],
-                    "event": event_short,
-                    "event_label": ev_label,
-                    "task_type": detected_task,
-                    "task_label": task_label,
-                    "suggestions": suggestions,
-                    "time": now_str,
-                    "model": llm.model
-                }
+                return self._opus_web_answer(
+                    llm, combined_text, msg_clean, ev_dir, event_short, ev_label,
+                    detected_task, task_label, uploaded_vault_entries, web_search_enabled, history, now_str
+                )
             except Exception as e:
                 return {"text": format_error_msg(e), "time": now_str}
 

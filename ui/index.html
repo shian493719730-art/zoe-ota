@@ -768,8 +768,18 @@
         </div>
 
         <div>
-          <label class="block text-zinc-700 dark:text-zinc-300 font-bold mb-1">模型代号 (Model)</label>
-          <input type="text" id="cfg-model" value="claude-opus-5-5" class="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-mono text-xs focus:outline-none focus:border-zinc-950 dark:focus:border-white transition">
+          <label class="block text-zinc-700 dark:text-zinc-300 font-bold mb-1">决策大模型档位（默认最高档位，可自由调节）</label>
+          <select id="cfg-model-preset" onchange="onModelPresetChanged()" class="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-medium text-xs focus:outline-none focus:border-zinc-950 dark:focus:border-white transition mb-1.5">
+            <option value="claude-opus-5-5">Claude Opus 5.5（最高旗舰档位 · 默认）</option>
+            <option value="claude-opus-4-5">Claude Opus 4.5（高阶深度推理）</option>
+            <option value="claude-sonnet-4-5">Claude Sonnet 4.5（均衡敏捷）</option>
+            <option value="claude-3-7-sonnet">Claude 3.7 Sonnet</option>
+            <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+            <option value="gpt-4o">GPT-4o（通用备选）</option>
+            <option value="qwen-max">Qwen Max（中文通用备选）</option>
+            <option value="__custom__">自定义精确模型代号...</option>
+          </select>
+          <input type="text" id="cfg-model" value="claude-opus-5-5" placeholder="输入模型代号，例如 claude-opus-5-5" class="hidden w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-mono text-xs focus:outline-none focus:border-zinc-950 dark:focus:border-white transition">
         </div>
 
         <div class="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 flex items-center justify-between">
@@ -2141,9 +2151,21 @@
         const statusDot = document.getElementById('model-status-dot');
         const statusText = document.getElementById('model-status-text');
 
-        if (provEl) provEl.value = cfg.provider || 'anthropic';
+        if (provEl) provEl.value = cfg.provider || 'openai_compat';
         if (baseEl) baseEl.value = cfg.base_url || '';
-        if (modEl) modEl.value = cfg.model || 'claude-opus-5-5';
+        const curMod = cfg.model || 'claude-opus-5-5';
+        if (modEl) modEl.value = curMod;
+        const presetEl = document.getElementById('cfg-model-preset');
+        if (presetEl) {
+          const opts = Array.from(presetEl.options).map(o => o.value);
+          if (opts.includes(curMod)) {
+            presetEl.value = curMod;
+            if (modEl) modEl.classList.add('hidden');
+          } else {
+            presetEl.value = '__custom__';
+            if (modEl) modEl.classList.remove('hidden');
+          }
+        }
         if (cfg.version) {
           const vb = document.getElementById('app-version-badge');
           const os = document.getElementById('cfg-ota-status');
@@ -2153,6 +2175,7 @@
 
         onProviderChanged();
 
+        const displayMod = curMod === 'claude-opus-5-5' ? 'Claude Opus 5.5' : curMod;
         if (cfg.provider === 'mock') {
           if (indEl) {
             indEl.innerText = '离线 Mock 演练中';
@@ -2166,17 +2189,30 @@
             indEl.className = 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400';
           }
           if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-emerald-500';
-          if (statusText) statusText.innerText = 'Claude Opus 5.5 就绪';
+          if (statusText) statusText.innerText = `${displayMod} 就绪`;
         } else {
           if (indEl) {
             indEl.innerText = '○ 尚未配置 API Key';
             indEl.className = 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 animate-pulse';
           }
           if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
-          if (statusText) statusText.innerText = 'Claude (待配置 Key)';
+          if (statusText) statusText.innerText = `${displayMod} (待配置 Key)`;
         }
       } catch (e) {
         console.warn('loadConfig 异常:', e);
+      }
+    }
+
+    function onModelPresetChanged() {
+      const presetEl = document.getElementById('cfg-model-preset');
+      const modEl = document.getElementById('cfg-model');
+      if (!presetEl || !modEl) return;
+      if (presetEl.value === '__custom__') {
+        modEl.classList.remove('hidden');
+        modEl.focus();
+      } else {
+        modEl.value = presetEl.value;
+        modEl.classList.add('hidden');
       }
     }
 
